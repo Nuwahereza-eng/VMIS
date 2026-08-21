@@ -1,0 +1,35 @@
+# VMIS local/on-prem deployment. Defaults to in-country / on-prem hosting
+# (build prompt section 8: data residency). No external managed services.
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: vmis
+      POSTGRES_PASSWORD: vmis
+      POSTGRES_DB: vmis
+    volumes:
+      - vmis_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vmis"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    ports:
+      - "5432:5432"
+
+  api:
+    build: ./services/api
+    environment:
+      VMIS_DATABASE_URL: postgresql+psycopg://vmis:vmis@db:5432/vmis
+      VMIS_SECRET_KEY: ${VMIS_SECRET_KEY:-change-me-in-production}
+      VMIS_BOOTSTRAP_ADMIN_USERNAME: ${VMIS_BOOTSTRAP_ADMIN_USERNAME:-admin}
+      VMIS_BOOTSTRAP_ADMIN_PASSWORD: ${VMIS_BOOTSTRAP_ADMIN_PASSWORD:-change-me-now}
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      - "8000:8000"
+
+volumes:
+  vmis_pgdata:
