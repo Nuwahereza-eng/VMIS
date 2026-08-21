@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from app.bootstrap import bootstrap_admin
 from app.db import SessionLocal, engine
 from app.models import Base
-from app.routers import activities, auth, charges, users, visitors, visits
+from app.routers import activities, auth, charges, sync, users, visitors, visits
 from app.seed import seed_tariff
 
 
@@ -37,6 +37,7 @@ def create_app() -> FastAPI:
     app.include_router(visits.router)
     app.include_router(activities.router)
     app.include_router(charges.router)
+    app.include_router(sync.router)
 
     @app.get("/health", tags=["ops"])
     def health() -> dict[str, str]:

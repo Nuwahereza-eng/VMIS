@@ -8,12 +8,14 @@ rules: [agents.rules.md](agents.rules.md).
 
 ## Status
 
-Sprints 1 to 4 of 6 are built and tested. Sprint 1: data model, auth, RBAC.
+Sprints 1 to 5 of 6 are built and tested. Sprint 1: data model, auth, RBAC.
 Sprint 2: visitor registration, station-generated identifiers, QR issue/scan.
 Sprint 3: entry/exit capture and the ticket-validity engine. Sprint 4:
-activities, automatic fees (integer minor units), and accommodation.
-Offline-first fields are baked into the schema from the first migration (per
-build prompt section 7). Sprints 5 to 6 are not built yet — see
+activities, automatic fees (integer minor units), and accommodation. Sprint 5:
+the synchronisation service — idempotent batch replay, server-side merge rules,
+and the exceptions queue, with the section 9 zero-loss / zero-duplicate /
+zero-collision tests. Offline-first fields are baked into the schema from the
+first migration (per build prompt section 7). Sprint 6 is not built yet — see
 [Open items](#open-items).
 
 ## Layout
@@ -30,6 +32,7 @@ services/api/          FastAPI backend (system of record)
     fees.py            per-category fee computation (integer minor units)
     seed.py            idempotent tariff loader
     seeds/             tariff_dev.json (DEV fixture, not real UWA rates)
+    sync.py            offline delta replay + server merge rules
   migrations/          Alembic migrations
   tests/               gate tests (pytest, SQLite, free, fast)
 docker-compose.yml     PostgreSQL + API, on-prem by default
@@ -113,6 +116,20 @@ users table is empty. Rotate it immediately.
   Activity/fee capture is activity-officer/management only; reads are open to all
   officer roles. **The bundled tariff is a development fixture with placeholder
   figures — the real UWA tariff must be confirmed and loaded before production.**
+- **Synchronisation service (Sprint 5, sections 3.2.3, 4.1, 5, 9).** `POST
+  /sync/batch` accepts a station's offline delta log and replays it into the
+  system of record. Each operation carries a client-generated `op_id` that is
+  logged, so a repeated or interrupted upload creates zero duplicates; record
+  creates are additionally idempotent on their station-generated id. Ids are
+  station-generated UUIDs, so two stations creating records offline never
+  collide. Every operation yields a stored record or a logged exception —
+  nothing is dropped. Merge rules: re-creates are idempotent no-ops; a visit
+  exit that contradicts a recorded exit keeps the original and files a
+  `contradictory_exit` exception; a synced visitor sharing id_number + name with
+  a different record is flagged `possible_duplicate_visitor` but still stored.
+  Revenue is recomputed server-side on merge (fees are not trusted from the
+  client). `GET /sync/exceptions` is the management-only supervisor queue. In-
+  batch operations are reordered by dependency so parents land before children.
 - **CI (section 3).** GitHub Actions runs pytest on every push and PR to main.
 - **Deployment (section 8).** Docker Compose, PostgreSQL, on-prem by default; no
   external managed services or licensed providers.
@@ -139,15 +156,17 @@ Not yet built (marked honestly, not as done):
 - [x] **Sprint 4** — activities, fees (integer minor units), accommodation.
       Built and tested against a **development tariff fixture**. The real UWA
       tariff (Table 1) must be signed off by UWA and loaded before production.
-- [ ] **Sprint 5** — local store (IndexedDB/SQLite), outbound sync queue,
-      server merge rules, exceptions list for business-rule conflicts.
+- [x] **Sprint 5** — server-side sync service: idempotent batch replay, merge
+      rules, and the exceptions list for business-rule conflicts. Built and
+      tested. The client-side local store (IndexedDB/SQLite) and outbound queue
+      land with the frontend PWA below.
 - [ ] **Sprint 6** — dashboard, alerts, reporting, hardening (encryption at
       rest including on-device, retention enforcement).
 - [ ] **Frontend** — React PWA (installable, fully offline for registration, QR
       verification, activity capture).
-- [ ] **Sync test suite** — zero-loss / zero-duplicate / zero-collision
-      (section 9). This is the distinguishing characteristic and gates every
-      sync-touching feature.
+- [x] **Sync test suite** — zero-loss / zero-duplicate / zero-collision, plus
+      ticket-status-after-merge and conflict handling (section 9). Built; gates
+      every sync-touching feature.
 
 ## Legal
 

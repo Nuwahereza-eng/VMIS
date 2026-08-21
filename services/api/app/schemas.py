@@ -2,6 +2,7 @@
 
 import uuid
 from datetime import datetime
+from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -236,3 +237,63 @@ class VisitorChargesSummary(BaseModel):
     # Fees can span currencies (USD activities, UGX activities), so totals are
     # reported per currency; money is never summed across currencies.
     totals: list[CurrencyTotal]
+
+
+# --- Sprint 5: synchronisation ---
+
+# Entity types a station may write offline and later sync.
+SyncEntityType = Literal[
+    "visitor",
+    "visit",
+    "visit_exit",
+    "visitor_activity",
+    "accommodation",
+]
+
+
+class SyncOp(BaseModel):
+    # Client-generated operation id: the idempotency key for replay.
+    op_id: uuid.UUID
+    entity_type: SyncEntityType
+    # For mutations (visit_exit) the target record id; for creates the payload
+    # carries its own station-generated id.
+    entity_id: uuid.UUID | None = None
+    payload: dict = Field(default_factory=dict)
+
+
+class SyncBatchRequest(BaseModel):
+    station_id: str | None = Field(default=None, max_length=64)
+    operations: list[SyncOp] = Field(default_factory=list, max_length=1000)
+
+
+class SyncOpResult(BaseModel):
+    op_id: uuid.UUID
+    entity_type: str
+    entity_id: uuid.UUID | None = None
+    # applied  = new record/mutation written
+    # exists   = record already present, treated idempotently (no change)
+    # duplicate = this op_id was already processed on an earlier upload
+    # conflict = business-rule violation, written to the exceptions list
+    result: Literal["applied", "exists", "duplicate", "conflict"]
+    exception_kind: str | None = None
+
+
+class SyncBatchResult(BaseModel):
+    processed: int
+    applied: int
+    duplicates: int
+    conflicts: int
+    results: list[SyncOpResult]
+
+
+class SyncExceptionOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    station_id: str | None
+    entity_type: str
+    entity_id: str | None
+    kind: str
+    detail: str | None
+    resolved: bool
+    created_at: datetime
