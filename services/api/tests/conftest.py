@@ -61,3 +61,28 @@ def admin_token(client):
 
 def auth_header(token: str) -> dict[str, str]:
     return {"Authorization": f"Bearer {token}"}
+
+
+def _make_officer_token(client, admin_token, username, role, station):
+    resp = client.post(
+        "/users",
+        headers=auth_header(admin_token),
+        json={
+            "username": username,
+            "password": "officerpass123",
+            "role": role,
+            "station_id": station,
+        },
+    )
+    assert resp.status_code == 201, resp.text
+    return _token(client, username, "officerpass123")
+
+
+@pytest.fixture
+def gate_officer_token(client, admin_token):
+    return _make_officer_token(client, admin_token, "gate1", "gate_officer", "GATE-A")
+
+
+@pytest.fixture
+def activity_officer_token(client, admin_token):
+    return _make_officer_token(client, admin_token, "act1", "activity_officer", "STATION-1")

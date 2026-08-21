@@ -8,9 +8,11 @@ rules: [agents.rules.md](agents.rules.md).
 
 ## Status
 
-Sprint 1 of 6 is built and tested: data model, authentication, and RBAC, with
-offline-first fields baked into the schema from the first migration (per build
-prompt section 7). Sprints 2 to 6 are not built yet — see [Open items](#open-items).
+Sprints 1 and 2 of 6 are built and tested. Sprint 1: data model, auth, RBAC.
+Sprint 2: visitor registration, station-generated identifiers, QR issue/scan.
+Offline-first fields are baked into the schema from the first migration (per
+build prompt section 7). Sprints 3 to 6 are not built yet — see
+[Open items](#open-items).
 
 ## Layout
 
@@ -21,6 +23,7 @@ services/api/          FastAPI backend (system of record)
     routers/           auth, users
     security.py        Argon2 hashing + JWT
     rbac.py            server-side role enforcement
+    qr.py              QR payload build/parse + PNG render
   migrations/          Alembic migrations
   tests/               gate tests (pytest, SQLite, free, fast)
 docker-compose.yml     PostgreSQL + API, on-prem by default
@@ -71,10 +74,18 @@ users table is empty. Rotate it immediately.
   management-only.
 - **Audit log (sections 4.1, 11).** Append-only `audit_entries`; a helper writes
   create/login events. No plaintext PII is placed in audit details.
+- **Registration + identification (Sprint 2, section 4.1).** `POST /visitors`
+  registers one record per visitor with category (FNR/FR/ROA/EAC). Clients may
+  supply a station-generated UUID; re-posting the same id is idempotent (no
+  duplicate on offline replay). A duplicate check on id_number + name warns the
+  officer without blocking. `GET /visitors/{id}/qr` returns a PNG QR that encodes
+  only the identifier; `POST /visitors/verify` resolves a scanned payload to a
+  record (the online counterpart of an offline local-store check). Registration
+  is gate-officer/management only; verification is open to all officer roles.
 - **Privacy by design (section 8).** Visitor PII is minimised (name, ID number,
-  nationality) with a `privacy_notice_accepted` flag; a retention-period setting
-  (`VMIS_PII_RETENTION_DAYS`) is configured though enforcement lands later. All
-  test/dev data is synthetic.
+  nationality) with a `privacy_notice_accepted` flag enforced at registration; a
+  retention-period setting (`VMIS_PII_RETENTION_DAYS`) is configured though
+  enforcement lands later. All test/dev data is synthetic.
 - **CI (section 3).** GitHub Actions runs pytest on every push and PR to main.
 - **Deployment (section 8).** Docker Compose, PostgreSQL, on-prem by default; no
   external managed services or licensed providers.
@@ -93,8 +104,8 @@ users table is empty. Rotate it immediately.
 
 Not yet built (marked honestly, not as done):
 
-- [ ] **Sprint 2** — registration API, QR issue/scan, duplicate warning on
-      id_number + name.
+- [x] **Sprint 2** — registration API, QR issue/scan, duplicate warning on
+      id_number + name. Built and tested.
 - [ ] **Sprint 3** — entry/exit capture, ticket validity engine
       (`expiry = entry + nights x 24h`, status derived on demand, never stored).
 - [ ] **Sprint 4** — activities, fees (integer minor units), accommodation.
