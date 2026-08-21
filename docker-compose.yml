@@ -31,5 +31,12 @@ services:
     ports:
       - "8000:8000"
 
+  web:
+    build: ./services/web
+    depends_on:
+      - api
+    ports:
+      - "5173:80"
+
 volumes:
   vmis_pgdata:

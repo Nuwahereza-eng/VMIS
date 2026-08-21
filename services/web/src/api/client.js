@@ -1,0 +1,66 @@
+// Thin API client for the FastAPI backend. Only used when online: logging in,
+// flushing the outbound sync queue, and management reads. Feature writes never
+// go straight here; they go to the local store and the outbox first.
+
+export class ApiError extends Error {
+  constructor(status, detail) {
+    super(detail || `HTTP ${status}`);
+    this.status = status;
+    this.detail = detail;
+  }
+}
+
+async function parse(res) {
+  const text = await res.text();
+  const body = text ? JSON.parse(text) : null;
+  if (!res.ok) {
+    const detail = body && body.detail ? body.detail : res.statusText;
+    throw new ApiError(res.status, detail);
+  }
+  return body;
+}
+
+// OAuth2 password grant: /auth/token expects form-encoded credentials.
+export async function login(username, password) {
+  const form = new URLSearchParams({ username, password });
+  const res = await fetch("/auth/token", {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: form.toString(),
+  });
+  const body = await parse(res);
+  return body.access_token;
+}
+
+function authHeaders(token) {
+  return { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
+}
+
+// Upload a batch of queued operations to the sync service.
+export async function syncBatch(token, stationId, operations) {
+  const res = await fetch("/sync/batch", {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify({ station_id: stationId, operations }),
+  });
+  return parse(res);
+}
+
+export async function verifyVisitor(token, payload) {
+  const res = await fetch("/visitors/verify", {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify({ payload }),
+  });
+  return parse(res);
+}
+
+export async function getActivities(token) {
+  const res = await fetch("/activities", { headers: authHeaders(token) });
+  return parse(res);
+}
+
+export async function getDashboard(token) {
+  const res = await fetch("/management/dashboard", { headers: authHeaders(token) });
+  return parse(res);
+}

@@ -8,17 +8,19 @@ rules: [agents.rules.md](agents.rules.md).
 
 ## Status
 
-Sprints 1 to 6 of 6 (the backend) are built and tested. Sprint 1: data model,
-auth, RBAC. Sprint 2: visitor registration, station-generated identifiers, QR
-issue/scan. Sprint 3: entry/exit capture and the ticket-validity engine.
-Sprint 4: activities, automatic fees (integer minor units), and accommodation.
-Sprint 5: the synchronisation service — idempotent batch replay, server-side
-merge rules, and the exceptions queue, with the section 9 zero-loss /
-zero-duplicate / zero-collision tests. Sprint 6: the management dashboard,
-operational alerts, exportable periodic reporting, and PII-retention
-enforcement. Offline-first fields are baked into the schema from the first
-migration (per build prompt section 7). The React PWA frontend is the remaining
-deliverable — see [Open items](#open-items).
+All six backend sprints and the React PWA frontend are built and tested.
+Sprint 1: data model, auth, RBAC. Sprint 2: visitor registration,
+station-generated identifiers, QR issue/scan. Sprint 3: entry/exit capture and
+the ticket-validity engine. Sprint 4: activities, automatic fees (integer
+minor units), and accommodation. Sprint 5: the synchronisation service —
+idempotent batch replay, server-side merge rules, and the exceptions queue,
+with the section 9 zero-loss / zero-duplicate / zero-collision tests. Sprint 6:
+the management dashboard, operational alerts, exportable periodic reporting,
+and PII-retention enforcement. Frontend: an installable, offline-first React
+PWA for registration, QR verification, entry/exit, and activity capture, with
+an IndexedDB local store and an outbound sync queue. Offline-first fields are
+baked into the schema from the first migration (per build prompt section 7).
+Remaining hardening is noted under [Open items](#open-items).
 
 ## Layout
 
@@ -41,7 +43,13 @@ services/api/          FastAPI backend (system of record)
     retention.py       PII retention enforcement (redaction)
   migrations/          Alembic migrations
   tests/               gate tests (pytest, SQLite, free, fast)
-docker-compose.yml     PostgreSQL + API, on-prem by default
+services/web/          React PWA (offline-first field client)
+  src/db/              IndexedDB local store
+  src/data/            write-local-then-enqueue repository
+  src/sync/            outbound queue -> /sync/batch
+  src/pages/           login, register, verify, entry/exit, activities, sync
+  tests/               Vitest suite (deterministic core)
+docker-compose.yml     PostgreSQL + API + web, on-prem by default
 .github/workflows/     CI: pytest on every push/PR to main
 ```
 
@@ -154,6 +162,18 @@ users table is empty. Rotate it immediately.
   fields redacted in place (the aggregate row survives for reporting). Redaction
   is idempotent, audit-logged, and runs at application start and on demand via
   `POST /management/retention/enforce` (management-only).
+- **Offline-first PWA (frontend, sections 3, 5, Table 5).** An installable
+  React + Bootstrap app (`services/web`) that works fully offline for
+  registration, QR verification, entry/exit, and activity capture. Every write
+  lands in an IndexedDB local store with a station-generated UUID and is queued
+  as a sync operation; the queue flushes to `POST /sync/batch` on reconnect and
+  auto-flushes when connectivity returns. Retry is safe (the server dedupes on
+  `op_id`), nothing leaves the device until acknowledged, and QR verification
+  runs against the local record so it works with no network. The client records
+  activity capture but never a fee — the server recomputes revenue on merge.
+  A Vitest suite covers the ticket mirror, id generation, the local
+  repository, the sync queue (ordering, retry-is-safe, conflict clearing), and
+  session handling. See [services/web/README.md](services/web/README.md).
 - **CI (section 3).** GitHub Actions runs pytest on every push and PR to main.
 - **Deployment (section 8).** Docker Compose, PostgreSQL, on-prem by default; no
   external managed services or licensed providers.
@@ -188,9 +208,11 @@ Not yet built (marked honestly, not as done):
       last-sync), operational alerts, exportable periodic reports, and PII
       retention enforcement. Built and tested. Application-level encryption at
       rest is not yet implemented — see the gap note below.
-- [ ] **Frontend** — React PWA (installable, fully offline for registration, QR
-      verification, activity capture), including the on-device local store and
-      its at-rest encryption.
+- [x] **Frontend** — installable, offline-first React PWA for registration, QR
+      verification, entry/exit, and activity capture, with an IndexedDB local
+      store and outbound sync queue. Built and tested. On-device at-rest
+      encryption of the local store is a remaining hardening task — see the gap
+      note below.
 - [x] **Sync test suite** — zero-loss / zero-duplicate / zero-collision, plus
       ticket-status-after-merge and conflict handling (section 9). Built; gates
       every sync-touching feature.
