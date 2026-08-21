@@ -30,3 +30,8 @@ class Visitor(UUIDPrimaryKeyMixin, TimestampMixin, SyncMixin, Base):
     privacy_notice_accepted: Mapped[bool] = mapped_column(
         Boolean, default=False, nullable=False
     )
+
+    # Set once this visitor's personal data has been redacted by retention
+    # enforcement (build prompt section 8). A redacted record is kept for
+    # aggregate reporting but no longer holds identifying data.
+    pii_redacted: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)

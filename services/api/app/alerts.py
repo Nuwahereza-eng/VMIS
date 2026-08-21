@@ -1,0 +1,124 @@
+"""Operational alerts (build prompt section 4.1, Alerts).
+
+Four alert kinds are derived from live data, never stored:
+
+- ``ticket_expired``  an open stay whose ticket has passed its expiry.
+- ``overstay``        an open stay still inside more than a grace period past
+                      expiry (a stronger form of ticket expiry).
+- ``missing_exit``    an open stay whose entry is older than a threshold, i.e.
+                      the exit was probably never recorded.
+- ``duplicate_entry`` a visitor holding more than one open stay at once.
+
+All arithmetic is timezone-aware UTC. Thresholds come from settings so an
+operator can tune them without a code change.
+"""
+
+import enum
+from dataclasses import dataclass
+from datetime import datetime, timedelta
+
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app.config import get_settings
+from app.models.base import ensure_utc, utcnow
+from app.models.visit import Visit
+from app.tickets import compute_validity
+
+
+class AlertKind(str, enum.Enum):
+    TICKET_EXPIRED = "ticket_expired"
+    OVERSTAY = "overstay"
+    MISSING_EXIT = "missing_exit"
+    DUPLICATE_ENTRY = "duplicate_entry"
+
+
+@dataclass(frozen=True)
+class Alert:
+    kind: AlertKind
+    visit_id: str
+    visitor_id: str
+    entry_gate: str
+    entry_timestamp: datetime
+    detail: str
+
+
+def compute_alerts(db: Session, now: datetime | None = None) -> list[Alert]:
+    """Return every current alert across all open stays.
+
+    Only open stays (no recorded exit) can raise an alert: a departed visitor
+    is no longer a live concern.
+    """
+    settings = get_settings()
+    reference = ensure_utc(now) if now is not None else utcnow()
+    overstay_after = timedelta(hours=settings.overstay_grace_hours)
+    missing_exit_after = timedelta(hours=settings.missing_exit_hours)
+
+    open_visits = db.scalars(
+        select(Visit).where(Visit.exit_timestamp.is_(None)).order_by(Visit.entry_timestamp)
+    ).all()
+
+    alerts: list[Alert] = []
+    open_count_by_visitor: dict[str, int] = {}
+
+    for visit in open_visits:
+        visitor_key = str(visit.visitor_id)
+        open_count_by_visitor[visitor_key] = open_count_by_visitor.get(visitor_key, 0) + 1
+
+        entry = ensure_utc(visit.entry_timestamp)
+        validity = compute_validity(visit.entry_timestamp, visit.nights_purchased, reference)
+        expiry = validity.expiry
+
+        if reference >= expiry:
+            overdue = reference - expiry
+            if overdue >= overstay_after:
+                alerts.append(
+                    Alert(
+                        kind=AlertKind.OVERSTAY,
+                        visit_id=str(visit.id),
+                        visitor_id=visitor_key,
+                        entry_gate=visit.entry_gate,
+                        entry_timestamp=entry,
+                        detail=f"Inside {int(overdue.total_seconds() // 3600)}h past ticket expiry",
+                    )
+                )
+            else:
+                alerts.append(
+                    Alert(
+                        kind=AlertKind.TICKET_EXPIRED,
+                        visit_id=str(visit.id),
+                        visitor_id=visitor_key,
+                        entry_gate=visit.entry_gate,
+                        entry_timestamp=entry,
+                        detail="Ticket expired while still inside",
+                    )
+                )
+
+        if reference - entry >= missing_exit_after:
+            alerts.append(
+                Alert(
+                    kind=AlertKind.MISSING_EXIT,
+                    visit_id=str(visit.id),
+                    visitor_id=visitor_key,
+                    entry_gate=visit.entry_gate,
+                    entry_timestamp=entry,
+                    detail=f"Open for {int((reference - entry).total_seconds() // 3600)}h with no exit",
+                )
+            )
+
+    # Duplicate entry: a visitor with more than one open stay at the same time.
+    for visit in open_visits:
+        visitor_key = str(visit.visitor_id)
+        if open_count_by_visitor.get(visitor_key, 0) > 1:
+            alerts.append(
+                Alert(
+                    kind=AlertKind.DUPLICATE_ENTRY,
+                    visit_id=str(visit.id),
+                    visitor_id=visitor_key,
+                    entry_gate=visit.entry_gate,
+                    entry_timestamp=ensure_utc(visit.entry_timestamp),
+                    detail="Visitor has more than one open stay",
+                )
+            )
+
+    return alerts

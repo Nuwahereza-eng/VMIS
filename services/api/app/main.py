@@ -5,9 +5,20 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 
 from app.bootstrap import bootstrap_admin
+from app.config import get_settings
 from app.db import SessionLocal, engine
 from app.models import Base
-from app.routers import activities, auth, charges, sync, users, visitors, visits
+from app.retention import enforce_retention
+from app.routers import (
+    activities,
+    auth,
+    charges,
+    management,
+    sync,
+    users,
+    visitors,
+    visits,
+)
 from app.seed import seed_tariff
 
 
@@ -21,6 +32,10 @@ async def lifespan(app: FastAPI):
         # Load the development tariff fixture. Idempotent. The real UWA tariff
         # must replace this before production (build prompt section 4.3).
         seed_tariff(db)
+        # Enforce the PII retention period at start (build prompt section 8).
+        if get_settings().retention_enforce_on_start:
+            enforce_retention(db)
+            db.commit()
     yield
 
 
@@ -38,6 +53,7 @@ def create_app() -> FastAPI:
     app.include_router(activities.router)
     app.include_router(charges.router)
     app.include_router(sync.router)
+    app.include_router(management.router)
 
     @app.get("/health", tags=["ops"])
     def health() -> dict[str, str]:

@@ -297,3 +297,58 @@ class SyncExceptionOut(BaseModel):
     detail: str | None
     resolved: bool
     created_at: datetime
+
+
+# --- Sprint 6: dashboard, alerts, reporting, retention ---
+
+
+class AlertOut(BaseModel):
+    kind: str
+    visit_id: uuid.UUID
+    visitor_id: uuid.UUID
+    entry_gate: str
+    entry_timestamp: datetime
+    detail: str
+
+
+class CountOut(BaseModel):
+    label: str
+    count: int
+
+
+class StationSyncOut(BaseModel):
+    station_id: str
+    last_sync_at: datetime
+    operations: int
+
+
+class DashboardOut(BaseModel):
+    inside_now: int
+    by_gate: list[CountOut]
+    by_category: list[CountOut]
+    by_activity: list[CountOut]
+    by_lodge: list[CountOut]
+    revenue: list[CurrencyTotal]
+    stations: list[StationSyncOut]
+    alert_counts: list[CountOut]
+
+
+class ReportRowOut(BaseModel):
+    period: str
+    visitors_registered: int
+    entries: int
+    activities: int
+    revenue: list[CurrencyTotal]
+
+
+class ReportOut(BaseModel):
+    granularity: str
+    start: datetime
+    end: datetime
+    rows: list[ReportRowOut]
+
+
+class RetentionResultOut(BaseModel):
+    cutoff: datetime
+    redacted: int
+    retention_days: int

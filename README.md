@@ -8,15 +8,17 @@ rules: [agents.rules.md](agents.rules.md).
 
 ## Status
 
-Sprints 1 to 5 of 6 are built and tested. Sprint 1: data model, auth, RBAC.
-Sprint 2: visitor registration, station-generated identifiers, QR issue/scan.
-Sprint 3: entry/exit capture and the ticket-validity engine. Sprint 4:
-activities, automatic fees (integer minor units), and accommodation. Sprint 5:
-the synchronisation service — idempotent batch replay, server-side merge rules,
-and the exceptions queue, with the section 9 zero-loss / zero-duplicate /
-zero-collision tests. Offline-first fields are baked into the schema from the
-first migration (per build prompt section 7). Sprint 6 is not built yet — see
-[Open items](#open-items).
+Sprints 1 to 6 of 6 (the backend) are built and tested. Sprint 1: data model,
+auth, RBAC. Sprint 2: visitor registration, station-generated identifiers, QR
+issue/scan. Sprint 3: entry/exit capture and the ticket-validity engine.
+Sprint 4: activities, automatic fees (integer minor units), and accommodation.
+Sprint 5: the synchronisation service — idempotent batch replay, server-side
+merge rules, and the exceptions queue, with the section 9 zero-loss /
+zero-duplicate / zero-collision tests. Sprint 6: the management dashboard,
+operational alerts, exportable periodic reporting, and PII-retention
+enforcement. Offline-first fields are baked into the schema from the first
+migration (per build prompt section 7). The React PWA frontend is the remaining
+deliverable — see [Open items](#open-items).
 
 ## Layout
 
@@ -33,6 +35,10 @@ services/api/          FastAPI backend (system of record)
     seed.py            idempotent tariff loader
     seeds/             tariff_dev.json (DEV fixture, not real UWA rates)
     sync.py            offline delta replay + server merge rules
+    alerts.py          derived operational alerts (expiry/overstay/etc.)
+    dashboard.py       live counts, revenue, per-station last-sync
+    reports.py         periodic reporting + CSV export
+    retention.py       PII retention enforcement (redaction)
   migrations/          Alembic migrations
   tests/               gate tests (pytest, SQLite, free, fast)
 docker-compose.yml     PostgreSQL + API, on-prem by default
@@ -93,8 +99,9 @@ users table is empty. Rotate it immediately.
   is gate-officer/management only; verification is open to all officer roles.
 - **Privacy by design (section 8).** Visitor PII is minimised (name, ID number,
   nationality) with a `privacy_notice_accepted` flag enforced at registration; a
-  retention-period setting (`VMIS_PII_RETENTION_DAYS`) is configured though
-  enforcement lands later. All test/dev data is synthetic.
+  retention-period setting (`VMIS_PII_RETENTION_DAYS`) is configured and
+  enforced (Sprint 6) by redacting identifying fields on records past the
+  window. All test/dev data is synthetic.
 - **Entry/exit + ticket validity (Sprint 3, sections 4.1, 4.2).** `POST /visits`
   records entry (gate, timestamp, officer, ticket number, nights purchased);
   `POST /visits/{id}/exit` matches the departure; an unmatched entry stays open
@@ -130,6 +137,23 @@ users table is empty. Rotate it immediately.
   Revenue is recomputed server-side on merge (fees are not trusted from the
   client). `GET /sync/exceptions` is the management-only supervisor queue. In-
   batch operations are reordered by dependency so parents land before children.
+- **Dashboard, alerts, reporting (Sprint 6, section 4.1).** All management-only
+  and all derived on request (nothing cached as a source of truth). `GET
+  /management/dashboard` gives live counts of who is inside now, broken down by
+  gate, category, activity, and lodge, plus revenue per currency, per-station
+  last-sync time, and current alert counts. `GET /management/alerts` derives the
+  four alert kinds from live data: ticket expired, overstay (past a grace
+  period), missing exit (open too long), and duplicate entry (a visitor with
+  more than one open stay). `GET /management/reports` summarises registrations,
+  entries, activities, and per-currency revenue at daily / weekly / monthly /
+  quarterly / annual granularity over a date range; `GET /management/reports.csv`
+  exports the same as CSV. Bucketing is done in Python so it runs identically on
+  SQLite and PostgreSQL.
+- **Retention enforcement (Sprint 6, section 8).** `VMIS_PII_RETENTION_DAYS`
+  defines the window; visitor records older than it have their identifying
+  fields redacted in place (the aggregate row survives for reporting). Redaction
+  is idempotent, audit-logged, and runs at application start and on demand via
+  `POST /management/retention/enforce` (management-only).
 - **CI (section 3).** GitHub Actions runs pytest on every push and PR to main.
 - **Deployment (section 8).** Docker Compose, PostgreSQL, on-prem by default; no
   external managed services or licensed providers.
@@ -160,13 +184,26 @@ Not yet built (marked honestly, not as done):
       rules, and the exceptions list for business-rule conflicts. Built and
       tested. The client-side local store (IndexedDB/SQLite) and outbound queue
       land with the frontend PWA below.
-- [ ] **Sprint 6** — dashboard, alerts, reporting, hardening (encryption at
-      rest including on-device, retention enforcement).
+- [x] **Sprint 6** — management dashboard (live counts, revenue, per-station
+      last-sync), operational alerts, exportable periodic reports, and PII
+      retention enforcement. Built and tested. Application-level encryption at
+      rest is not yet implemented — see the gap note below.
 - [ ] **Frontend** — React PWA (installable, fully offline for registration, QR
-      verification, activity capture).
+      verification, activity capture), including the on-device local store and
+      its at-rest encryption.
 - [x] **Sync test suite** — zero-loss / zero-duplicate / zero-collision, plus
       ticket-status-after-merge and conflict handling (section 9). Built; gates
       every sync-touching feature.
+
+### Known gap: encryption at rest
+
+Encryption in transit is handled at deployment (TLS terminated in front of the
+API). Encryption at rest (section 8) is **not yet implemented at the
+application layer**: it currently depends on the database/host providing
+volume- or tablespace-level encryption (e.g. an encrypted Postgres volume or
+disk). On-device at-rest encryption for the offline local store ships with the
+frontend PWA. Column-level encryption of stored PII in the backend is a
+remaining hardening task and is not marked done.
 
 ## Legal
 

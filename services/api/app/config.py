@@ -20,6 +20,14 @@ class Settings(BaseSettings):
     database_url: str = "sqlite+pysqlite:///./vmis_dev.db"
 
     pii_retention_days: int = 365
+    # Run PII retention enforcement automatically at application start.
+    retention_enforce_on_start: bool = True
+
+    # Alert thresholds (build prompt section 4.1, Alerts). Hours a stay may run
+    # past its ticket expiry before it counts as an overstay, and hours an open
+    # visit may sit before it is flagged as a probably-missed exit.
+    overstay_grace_hours: int = 6
+    missing_exit_hours: int = 48
 
     bootstrap_admin_username: str | None = None
     bootstrap_admin_password: str | None = None
