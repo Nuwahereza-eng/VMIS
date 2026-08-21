@@ -12,10 +12,10 @@ export default function NavBar() {
       <div className="container">
         <span className="navbar-brand fw-bold d-flex align-items-center gap-2">
           <img
-            src="/logo.png"
+            src="/icon-192.png"
             alt=""
-            width={28}
-            height={28}
+            width={30}
+            height={30}
             className="bg-white rounded-circle p-1"
           />
           VMIS
