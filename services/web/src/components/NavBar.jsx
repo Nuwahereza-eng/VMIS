@@ -10,7 +10,16 @@ export default function NavBar() {
   return (
     <nav className="navbar navbar-expand-lg navbar-dark bg-success">
       <div className="container">
-        <span className="navbar-brand fw-bold">VMIS</span>
+        <span className="navbar-brand fw-bold d-flex align-items-center gap-2">
+          <img
+            src="/logo.png"
+            alt=""
+            width={28}
+            height={28}
+            className="bg-white rounded-circle p-1"
+          />
+          VMIS
+        </span>
         <div className="navbar-nav me-auto">
           <NavLink to="/register" className={linkClass}>
             Register

@@ -30,6 +30,13 @@ export default function LoginPage() {
   return (
     <div className="container" style={{ maxWidth: 420 }}>
       <div className="text-center my-5">
+        <img
+          src="/logo.png"
+          alt="VMIS logo"
+          width={112}
+          height={112}
+          className="mb-2"
+        />
         <h1 className="h3 text-success fw-bold">VMIS</h1>
         <p className="text-muted">Murchison Falls National Park</p>
       </div>

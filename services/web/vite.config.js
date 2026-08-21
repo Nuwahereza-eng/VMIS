@@ -11,7 +11,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: "autoUpdate",
-      includeAssets: ["favicon.svg"],
+      includeAssets: ["favicon-48.png", "logo.png"],
       manifest: {
         name: "VMIS - Murchison Falls",
         short_name: "VMIS",
