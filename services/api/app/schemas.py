@@ -147,3 +147,92 @@ class EntryResult(BaseModel):
     # Non-blocking warning: the visitor already had an open visit when this
     # entry was recorded (possible duplicate entry, build prompt section 4.1).
     duplicate_open_visit: bool = False
+
+
+# --- Sprint 4: activities, fees, accommodation ---
+
+
+class ActivityRateOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    category: VisitorCategory
+    amount_minor: int
+    currency: str
+
+
+class ActivityOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    code: str
+    name: str
+    is_free: bool
+    is_active: bool
+
+
+class ActivityCatalogueEntry(ActivityOut):
+    rates: list[ActivityRateOut] = Field(default_factory=list)
+
+
+class VisitorActivityCreate(BaseModel):
+    # Client-supplied station UUID for idempotent offline replay; omit to let
+    # the server generate one.
+    id: uuid.UUID | None = None
+    activity_id: uuid.UUID
+    quantity: int = Field(default=1, ge=1, le=1000)
+    origin_station_id: str | None = Field(default=None, max_length=64)
+    client_created_at: datetime | None = None
+
+
+class VisitorActivityOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    visitor_id: uuid.UUID
+    activity_id: uuid.UUID
+    category: VisitorCategory
+    quantity: int
+    unit_amount_minor: int
+    amount_minor: int
+    currency: str
+
+
+class VisitorActivityResult(BaseModel):
+    activity: VisitorActivityOut
+    idempotent: bool = False
+
+
+class AccommodationCreate(BaseModel):
+    id: uuid.UUID | None = None
+    facility: str = Field(min_length=1, max_length=128)
+    nights: int = Field(ge=1, le=365)
+    origin_station_id: str | None = Field(default=None, max_length=64)
+    client_created_at: datetime | None = None
+
+
+class AccommodationOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    visitor_id: uuid.UUID
+    facility: str
+    nights: int
+
+
+class AccommodationResult(BaseModel):
+    accommodation: AccommodationOut
+    idempotent: bool = False
+
+
+class CurrencyTotal(BaseModel):
+    currency: str
+    amount_minor: int
+
+
+class VisitorChargesSummary(BaseModel):
+    visitor_id: uuid.UUID
+    activities: list[VisitorActivityOut]
+    accommodations: list[AccommodationOut]
+    # Fees can span currencies (USD activities, UGX activities), so totals are
+    # reported per currency; money is never summed across currencies.
+    totals: list[CurrencyTotal]

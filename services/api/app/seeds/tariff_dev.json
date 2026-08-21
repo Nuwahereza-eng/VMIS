@@ -1,0 +1,78 @@
+{
+  "_warning": "DEVELOPMENT FIXTURE ONLY. These figures are PLACEHOLDERS, not the real UWA tariff. Per build prompt section 4.3, the actual current Uganda Wildlife Authority rates must be confirmed with UWA and loaded before any use beyond development. Do NOT deploy these numbers to production.",
+  "_amounts": "amount_minor is integer minor units: USD in cents (exponent 2), UGX in shillings (exponent 0). Categories FNR/FR/ROA are USD; EAC is UGX.",
+  "activities": [
+    {
+      "code": "park_entrance",
+      "name": "Park Entrance",
+      "is_free": false,
+      "rates": { "FNR": 4500000, "FR": 3500000, "ROA": 3000000, "EAC": 20000 }
+    },
+    {
+      "code": "day_game_drive",
+      "name": "Day Game Drive",
+      "is_free": false,
+      "rates": { "FNR": 3000000, "FR": 2500000, "ROA": 2000000, "EAC": 15000 }
+    },
+    {
+      "code": "night_game_drive",
+      "name": "Night Game Drive",
+      "is_free": false,
+      "rates": { "FNR": 4000000, "FR": 3500000, "ROA": 3000000, "EAC": 25000 }
+    },
+    {
+      "code": "self_drive",
+      "name": "Self-Drive",
+      "is_free": false,
+      "rates": { "FNR": 2000000, "FR": 1500000, "ROA": 1000000, "EAC": 10000 }
+    },
+    {
+      "code": "launch_trip",
+      "name": "Launch Trip",
+      "is_free": false,
+      "rates": { "FNR": 3000000, "FR": 3000000, "ROA": 2500000, "EAC": 30000 }
+    },
+    {
+      "code": "falls_hiking_viewing",
+      "name": "Hiking / Viewing at the Falls",
+      "is_free": false,
+      "rates": { "FNR": 1500000, "FR": 1500000, "ROA": 1000000, "EAC": 15000 }
+    },
+    {
+      "code": "university_viewing",
+      "name": "University Viewing",
+      "is_free": false,
+      "rates": { "FNR": 500000, "FR": 500000, "ROA": 300000, "EAC": 10000 }
+    },
+    {
+      "code": "secondary_viewing",
+      "name": "Secondary School Viewing",
+      "is_free": false,
+      "rates": { "FNR": 300000, "FR": 300000, "ROA": 200000, "EAC": 5000 }
+    },
+    {
+      "code": "wildlife_clubs",
+      "name": "Wildlife Clubs",
+      "is_free": true,
+      "rates": {}
+    },
+    {
+      "code": "sport_fishing",
+      "name": "Sport Fishing",
+      "is_free": false,
+      "rates": { "FNR": 15000000, "FR": 15000000, "ROA": 10000000, "EAC": 100000 }
+    },
+    {
+      "code": "bird_watching",
+      "name": "Bird Watching",
+      "is_free": false,
+      "rates": { "FNR": 3000000, "FR": 3000000, "ROA": 2000000, "EAC": 30000 }
+    },
+    {
+      "code": "cycling",
+      "name": "Cycling",
+      "is_free": false,
+      "rates": { "FNR": 3000000, "FR": 2500000, "ROA": 2000000, "EAC": 20000 }
+    }
+  ]
+}

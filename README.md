@@ -8,11 +8,13 @@ rules: [agents.rules.md](agents.rules.md).
 
 ## Status
 
-Sprints 1 to 3 of 6 are built and tested. Sprint 1: data model, auth, RBAC.
+Sprints 1 to 4 of 6 are built and tested. Sprint 1: data model, auth, RBAC.
 Sprint 2: visitor registration, station-generated identifiers, QR issue/scan.
-Sprint 3: entry/exit capture and the ticket-validity engine. Offline-first
-fields are baked into the schema from the first migration (per build prompt
-section 7). Sprints 4 to 6 are not built yet — see [Open items](#open-items).
+Sprint 3: entry/exit capture and the ticket-validity engine. Sprint 4:
+activities, automatic fees (integer minor units), and accommodation.
+Offline-first fields are baked into the schema from the first migration (per
+build prompt section 7). Sprints 5 to 6 are not built yet — see
+[Open items](#open-items).
 
 ## Layout
 
@@ -25,6 +27,9 @@ services/api/          FastAPI backend (system of record)
     rbac.py            server-side role enforcement
     qr.py              QR payload build/parse + PNG render
     tickets.py         ticket validity engine (derived, never stored)
+    fees.py            per-category fee computation (integer minor units)
+    seed.py            idempotent tariff loader
+    seeds/             tariff_dev.json (DEV fixture, not real UWA rates)
   migrations/          Alembic migrations
   tests/               gate tests (pytest, SQLite, free, fast)
 docker-compose.yml     PostgreSQL + API, on-prem by default
@@ -96,6 +101,18 @@ users table is empty. Rotate it immediately.
   field can never exist. Entry ids accept a client UUID for idempotent offline
   replay; a second open visit for the same visitor raises a non-blocking
   duplicate-entry warning. All timestamps are emitted as unambiguous UTC.
+- **Activities, fees, accommodation (Sprint 4, sections 4.1, 4.3).** `GET
+  /activities` lists the seeded catalogue with per-category rates. `POST
+  /visitors/{id}/activities` charges an activity: the fee is computed
+  automatically from the visitor's category and stored as integer minor units
+  with its currency (USD for FNR/FR/ROA, UGX for EAC), snapshotted so a later
+  rate change never rewrites past charges. Free activities (wildlife clubs) cost
+  zero. `POST /visitors/{id}/accommodations` records facility + nights. `GET
+  /visitors/{id}/charges` totals fees per currency (money is never summed across
+  currencies). All writes are idempotent on a client UUID for offline replay.
+  Activity/fee capture is activity-officer/management only; reads are open to all
+  officer roles. **The bundled tariff is a development fixture with placeholder
+  figures — the real UWA tariff must be confirmed and loaded before production.**
 - **CI (section 3).** GitHub Actions runs pytest on every push and PR to main.
 - **Deployment (section 8).** Docker Compose, PostgreSQL, on-prem by default; no
   external managed services or licensed providers.
@@ -119,9 +136,9 @@ Not yet built (marked honestly, not as done):
 - [x] **Sprint 3** — entry/exit capture, ticket validity engine
       (`expiry = entry + nights x 24h`, status derived on demand, never stored).
       Built and tested.
-- [ ] **Sprint 4** — activities, fees (integer minor units), accommodation.
-      Requires the real UWA tariff (Table 1) — must be signed off by UWA before
-      production; only a development fixture will be used until then.
+- [x] **Sprint 4** — activities, fees (integer minor units), accommodation.
+      Built and tested against a **development tariff fixture**. The real UWA
+      tariff (Table 1) must be signed off by UWA and loaded before production.
 - [ ] **Sprint 5** — local store (IndexedDB/SQLite), outbound sync queue,
       server merge rules, exceptions list for business-rule conflicts.
 - [ ] **Sprint 6** — dashboard, alerts, reporting, hardening (encryption at

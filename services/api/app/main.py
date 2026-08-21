@@ -7,7 +7,8 @@ from fastapi import FastAPI
 from app.bootstrap import bootstrap_admin
 from app.db import SessionLocal, engine
 from app.models import Base
-from app.routers import auth, users, visitors, visits
+from app.routers import activities, auth, charges, users, visitors, visits
+from app.seed import seed_tariff
 
 
 @asynccontextmanager
@@ -17,6 +18,9 @@ async def lifespan(app: FastAPI):
     Base.metadata.create_all(bind=engine)
     with SessionLocal() as db:
         bootstrap_admin(db)
+        # Load the development tariff fixture. Idempotent. The real UWA tariff
+        # must replace this before production (build prompt section 4.3).
+        seed_tariff(db)
     yield
 
 
@@ -31,6 +35,8 @@ def create_app() -> FastAPI:
     app.include_router(users.router)
     app.include_router(visitors.router)
     app.include_router(visits.router)
+    app.include_router(activities.router)
+    app.include_router(charges.router)
 
     @app.get("/health", tags=["ops"])
     def health() -> dict[str, str]:

@@ -30,3 +30,6 @@ filterwarnings = ["error::DeprecationWarning"]
 
 [tool.setuptools.packages.find]
 include = ["app*"]
+
+[tool.setuptools.package-data]
+"app" = ["seeds/*.json"]
