@@ -89,3 +89,61 @@ class VerifyRequest(BaseModel):
 class VerifyResult(BaseModel):
     found: bool
     visitor: VisitorOut | None = None
+
+
+# --- Sprint 3: entry/exit + ticket validity ---
+
+
+class EntryCreate(BaseModel):
+    # Client-supplied station UUID for idempotent offline replay; omit to let
+    # the server generate one.
+    id: uuid.UUID | None = None
+    visitor_id: uuid.UUID
+    ticket_number: str = Field(min_length=1, max_length=64)
+    # A ticket is valid for at least its entry day (expiry = entry + nights x 24h).
+    nights_purchased: int = Field(ge=1, le=365)
+    # Defaults server-side to the officer's gate and the current time.
+    entry_gate: str | None = Field(default=None, max_length=64)
+    entry_timestamp: datetime | None = None
+    origin_station_id: str | None = Field(default=None, max_length=64)
+    client_created_at: datetime | None = None
+
+
+class ExitCreate(BaseModel):
+    # Defaults server-side to the officer's gate and the current time.
+    exit_gate: str | None = Field(default=None, max_length=64)
+    exit_timestamp: datetime | None = None
+
+
+class TicketInfo(BaseModel):
+    """Derived on every request, never stored (build prompt Table 4)."""
+
+    expiry: datetime
+    status: str
+    remaining_seconds: int
+
+
+class VisitOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    visitor_id: uuid.UUID
+    entry_gate: str
+    entry_timestamp: datetime
+    ticket_number: str
+    nights_purchased: int
+    exit_gate: str | None
+    exit_timestamp: datetime | None
+    is_open: bool
+    origin_station_id: str | None
+    server_received_at: datetime | None
+    ticket: TicketInfo
+
+
+class EntryResult(BaseModel):
+    visit: VisitOut
+    # True when this exact entry id already existed (idempotent offline replay).
+    idempotent: bool = False
+    # Non-blocking warning: the visitor already had an open visit when this
+    # entry was recorded (possible duplicate entry, build prompt section 4.1).
+    duplicate_open_visit: bool = False

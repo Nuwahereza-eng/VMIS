@@ -20,6 +20,20 @@ def utcnow() -> datetime:
     return datetime.now(timezone.utc)
 
 
+def ensure_utc(value: datetime | None) -> datetime | None:
+    """Normalise a stored datetime to timezone-aware UTC.
+
+    Some stores (e.g. SQLite) return naive datetimes even for timezone-aware
+    columns. Such values are always written as UTC, so a missing tzinfo is
+    read back as UTC. This keeps the API's timestamps in one unambiguous form.
+    """
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=timezone.utc)
+    return value.astimezone(timezone.utc)
+
+
 class Base(DeclarativeBase):
     pass
 

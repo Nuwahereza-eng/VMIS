@@ -4,6 +4,7 @@ from app.models.audit import AuditEntry
 from app.models.base import Base
 from app.models.enums import Role, VisitorCategory
 from app.models.user import User
+from app.models.visit import Visit
 from app.models.visitor import Visitor
 
 __all__ = [
@@ -12,5 +13,6 @@ __all__ = [
     "VisitorCategory",
     "User",
     "Visitor",
+    "Visit",
     "AuditEntry",
 ]

@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from app.bootstrap import bootstrap_admin
 from app.db import SessionLocal, engine
 from app.models import Base
-from app.routers import auth, users, visitors
+from app.routers import auth, users, visitors, visits
 
 
 @asynccontextmanager
@@ -30,6 +30,7 @@ def create_app() -> FastAPI:
     app.include_router(auth.router)
     app.include_router(users.router)
     app.include_router(visitors.router)
+    app.include_router(visits.router)
 
     @app.get("/health", tags=["ops"])
     def health() -> dict[str, str]:

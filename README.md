@@ -8,11 +8,11 @@ rules: [agents.rules.md](agents.rules.md).
 
 ## Status
 
-Sprints 1 and 2 of 6 are built and tested. Sprint 1: data model, auth, RBAC.
+Sprints 1 to 3 of 6 are built and tested. Sprint 1: data model, auth, RBAC.
 Sprint 2: visitor registration, station-generated identifiers, QR issue/scan.
-Offline-first fields are baked into the schema from the first migration (per
-build prompt section 7). Sprints 3 to 6 are not built yet — see
-[Open items](#open-items).
+Sprint 3: entry/exit capture and the ticket-validity engine. Offline-first
+fields are baked into the schema from the first migration (per build prompt
+section 7). Sprints 4 to 6 are not built yet — see [Open items](#open-items).
 
 ## Layout
 
@@ -24,6 +24,7 @@ services/api/          FastAPI backend (system of record)
     security.py        Argon2 hashing + JWT
     rbac.py            server-side role enforcement
     qr.py              QR payload build/parse + PNG render
+    tickets.py         ticket validity engine (derived, never stored)
   migrations/          Alembic migrations
   tests/               gate tests (pytest, SQLite, free, fast)
 docker-compose.yml     PostgreSQL + API, on-prem by default
@@ -86,6 +87,15 @@ users table is empty. Rotate it immediately.
   nationality) with a `privacy_notice_accepted` flag enforced at registration; a
   retention-period setting (`VMIS_PII_RETENTION_DAYS`) is configured though
   enforcement lands later. All test/dev data is synthetic.
+- **Entry/exit + ticket validity (Sprint 3, sections 4.1, 4.2).** `POST /visits`
+  records entry (gate, timestamp, officer, ticket number, nights purchased);
+  `POST /visits/{id}/exit` matches the departure; an unmatched entry stays open
+  and shows in `GET /visits/open` (who is inside the park). Ticket expiry
+  (`entry + nights x 24h`), status (Active/Expired), and remaining time are
+  computed on every response by the ticket engine and never stored, so a stale
+  field can never exist. Entry ids accept a client UUID for idempotent offline
+  replay; a second open visit for the same visitor raises a non-blocking
+  duplicate-entry warning. All timestamps are emitted as unambiguous UTC.
 - **CI (section 3).** GitHub Actions runs pytest on every push and PR to main.
 - **Deployment (section 8).** Docker Compose, PostgreSQL, on-prem by default; no
   external managed services or licensed providers.
@@ -106,8 +116,9 @@ Not yet built (marked honestly, not as done):
 
 - [x] **Sprint 2** — registration API, QR issue/scan, duplicate warning on
       id_number + name. Built and tested.
-- [ ] **Sprint 3** — entry/exit capture, ticket validity engine
+- [x] **Sprint 3** — entry/exit capture, ticket validity engine
       (`expiry = entry + nights x 24h`, status derived on demand, never stored).
+      Built and tested.
 - [ ] **Sprint 4** — activities, fees (integer minor units), accommodation.
       Requires the real UWA tariff (Table 1) — must be signed off by UWA before
       production; only a development fixture will be used until then.
