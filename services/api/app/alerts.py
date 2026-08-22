@@ -1,7 +1,10 @@
 """Operational alerts (build prompt section 4.1, Alerts).
 
-Four alert kinds are derived from live data, never stored:
+Five alert kinds are derived from live data, never stored:
 
+- ``expiry_warning``  an open stay whose ticket is still valid but within the
+                      warning window (default 3h), giving advance notice before
+                      it lapses rather than only at the moment of expiry.
 - ``ticket_expired``  an open stay whose ticket has passed its expiry.
 - ``overstay``        an open stay still inside more than a grace period past
                       expiry (a stronger form of ticket expiry).
@@ -27,6 +30,7 @@ from app.tickets import compute_validity
 
 
 class AlertKind(str, enum.Enum):
+    EXPIRY_WARNING = "expiry_warning"
     TICKET_EXPIRED = "ticket_expired"
     OVERSTAY = "overstay"
     MISSING_EXIT = "missing_exit"
@@ -53,6 +57,7 @@ def compute_alerts(db: Session, now: datetime | None = None) -> list[Alert]:
     reference = ensure_utc(now) if now is not None else utcnow()
     overstay_after = timedelta(hours=settings.overstay_grace_hours)
     missing_exit_after = timedelta(hours=settings.missing_exit_hours)
+    expiry_warning_within = timedelta(hours=settings.expiry_warning_hours)
 
     open_visits = db.scalars(
         select(Visit).where(Visit.exit_timestamp.is_(None)).order_by(Visit.entry_timestamp)
@@ -91,6 +96,27 @@ def compute_alerts(db: Session, now: datetime | None = None) -> list[Alert]:
                         entry_gate=visit.entry_gate,
                         entry_timestamp=entry,
                         detail="Ticket expired while still inside",
+                    )
+                )
+        else:
+            # Still valid: warn once the remaining time is within the window so
+            # staff and the visitor get advance notice before the ticket lapses.
+            remaining = expiry - reference
+            if remaining <= expiry_warning_within:
+                hours_left = int(remaining.total_seconds() // 3600)
+                minutes_left = int((remaining.total_seconds() % 3600) // 60)
+                if hours_left > 0:
+                    left = f"{hours_left}h {minutes_left}m"
+                else:
+                    left = f"{minutes_left}m"
+                alerts.append(
+                    Alert(
+                        kind=AlertKind.EXPIRY_WARNING,
+                        visit_id=str(visit.id),
+                        visitor_id=visitor_key,
+                        entry_gate=visit.entry_gate,
+                        entry_timestamp=entry,
+                        detail=f"Ticket expires in {left}",
                     )
                 )
 

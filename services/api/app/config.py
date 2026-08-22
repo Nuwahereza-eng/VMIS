@@ -28,6 +28,10 @@ class Settings(BaseSettings):
     # visit may sit before it is flagged as a probably-missed exit.
     overstay_grace_hours: int = 6
     missing_exit_hours: int = 48
+    # Hours of remaining ticket time at or below which an advance expiry-warning
+    # alert is raised, so staff and the visitor get notice before the ticket
+    # lapses rather than only at the moment of expiry (build prompt section 4.1).
+    expiry_warning_hours: int = 3
 
     bootstrap_admin_username: str | None = None
     bootstrap_admin_password: str | None = None

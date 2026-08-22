@@ -6,6 +6,7 @@ import { formatMinor } from "../domain/categories.js";
 import PageHeader from "../components/PageHeader.jsx";
 
 const ALERT_META = {
+  expiry_warning: { label: "Expiry warning", icon: "bi-alarm" },
   ticket_expired: { label: "Ticket expired", icon: "bi-hourglass-bottom" },
   overstay: { label: "Overstay", icon: "bi-exclamation-triangle" },
   missing_exit: { label: "Missing exit", icon: "bi-door-closed" },

@@ -69,6 +69,38 @@ def test_missing_exit_flagged_independently(db_session):
     assert AlertKind.OVERSTAY not in kinds
 
 
+def test_expiry_warning_within_window(db_session):
+    now = utcnow()
+    v = _visitor(db_session)
+    # 1-night ticket entered 22h ago -> 2h remaining, inside the 3h window.
+    _visit(db_session, v.id, entry=now - timedelta(hours=22), nights=1)
+    alerts = compute_alerts(db_session, now)
+    kinds = {a.kind for a in alerts}
+    assert AlertKind.EXPIRY_WARNING in kinds
+    assert AlertKind.TICKET_EXPIRED not in kinds
+    warning = next(a for a in alerts if a.kind == AlertKind.EXPIRY_WARNING)
+    assert "expires in" in warning.detail
+
+
+def test_no_expiry_warning_when_plenty_of_time(db_session):
+    now = utcnow()
+    v = _visitor(db_session)
+    # 1-night ticket entered 1h ago -> 23h remaining, well outside the window.
+    _visit(db_session, v.id, entry=now - timedelta(hours=1), nights=1)
+    kinds = {a.kind for a in compute_alerts(db_session, now)}
+    assert AlertKind.EXPIRY_WARNING not in kinds
+
+
+def test_expired_ticket_does_not_also_warn(db_session):
+    now = utcnow()
+    v = _visitor(db_session)
+    # Already expired 2h ago -> ticket_expired only, never expiry_warning.
+    _visit(db_session, v.id, entry=now - timedelta(hours=26), nights=1)
+    kinds = {a.kind for a in compute_alerts(db_session, now)}
+    assert AlertKind.EXPIRY_WARNING not in kinds
+    assert AlertKind.TICKET_EXPIRED in kinds
+
+
 def test_closed_visit_raises_no_alert(db_session):
     now = utcnow()
     v = _visitor(db_session)
