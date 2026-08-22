@@ -4,6 +4,7 @@ import { useApp } from "./context/AppContext.jsx";
 import Layout from "./components/Layout.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import DashboardPage from "./pages/DashboardPage.jsx";
+import VisitorsPage from "./pages/VisitorsPage.jsx";
 import RegisterPage from "./pages/RegisterPage.jsx";
 import VerifyPage from "./pages/VerifyPage.jsx";
 import ActivitiesPage from "./pages/ActivitiesPage.jsx";
@@ -33,6 +34,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Navigate to={home} replace />} />
         {isManagement && <Route path="/dashboard" element={<DashboardPage />} />}
+        {isManagement && <Route path="/visitors" element={<VisitorsPage />} />}
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/verify" element={<VerifyPage />} />
         <Route path="/visits" element={<VisitsPage />} />

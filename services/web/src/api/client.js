@@ -64,3 +64,14 @@ export async function getDashboard(token) {
   const res = await fetch("/management/dashboard", { headers: authHeaders(token) });
   return parse(res);
 }
+
+// Management-only park-wide visitor registry (server-backed, online only).
+export async function getVisitors(token, { search = "", category = "", limit = 50, offset = 0 } = {}) {
+  const params = new URLSearchParams();
+  if (search) params.set("search", search);
+  if (category) params.set("category", category);
+  params.set("limit", String(limit));
+  params.set("offset", String(offset));
+  const res = await fetch(`/visitors?${params.toString()}`, { headers: authHeaders(token) });
+  return parse(res);
+}

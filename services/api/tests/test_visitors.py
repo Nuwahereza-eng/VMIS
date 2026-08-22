@@ -88,6 +88,67 @@ def test_qr_endpoint_returns_png(client, gate_officer_token):
     assert resp.content[:8] == b"\x89PNG\r\n\x1a\n"
 
 
+def test_management_can_list_visitor_registry(client, gate_officer_token, admin_token):
+    a = _register(client, gate_officer_token, id_number="REG-1", full_name="Alice R").json()
+    _register(client, gate_officer_token, id_number="REG-2", full_name="Bob R")
+
+    resp = client.get("/visitors", headers=auth_header(admin_token))
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert body["total"] >= 2
+    ids = {item["id"] for item in body["items"]}
+    assert a["visitor"]["id"] in ids
+    # New records carry derived registry fields.
+    sample = next(i for i in body["items"] if i["id"] == a["visitor"]["id"])
+    assert sample["is_inside"] is False
+    assert sample["visit_count"] == 0
+
+
+def test_registry_search_matches_name_and_id(client, gate_officer_token, admin_token):
+    _register(client, gate_officer_token, id_number="SEARCH-XYZ", full_name="Zawadi Q")
+
+    by_name = client.get("/visitors", params={"search": "zawadi"}, headers=auth_header(admin_token))
+    assert by_name.status_code == 200
+    assert any(i["full_name"] == "Zawadi Q" for i in by_name.json()["items"])
+
+    by_id = client.get("/visitors", params={"search": "SEARCH-XYZ"}, headers=auth_header(admin_token))
+    assert any(i["id_number"] == "SEARCH-XYZ" for i in by_id.json()["items"])
+
+
+def test_registry_pagination_limits_rows(client, gate_officer_token, admin_token):
+    for i in range(3):
+        _register(client, gate_officer_token, id_number=f"PAGE-{i}", full_name=f"Pager {i}")
+    resp = client.get("/visitors", params={"limit": 2}, headers=auth_header(admin_token))
+    assert resp.status_code == 200
+    assert len(resp.json()["items"]) == 2
+    assert resp.json()["total"] >= 3
+
+
+def test_registry_reports_inside_status(client, gate_officer_token, admin_token):
+    visitor = _register(client, gate_officer_token, id_number="INSIDE-1", full_name="Inside One").json()["visitor"]
+    entry = client.post(
+        "/visits",
+        headers=auth_header(gate_officer_token),
+        json={"visitor_id": visitor["id"], "ticket_number": "TK-INSIDE", "nights_purchased": 1},
+    )
+    assert entry.status_code == 201, entry.text
+
+    resp = client.get("/visitors", params={"search": "INSIDE-1"}, headers=auth_header(admin_token))
+    item = next(i for i in resp.json()["items"] if i["id"] == visitor["id"])
+    assert item["is_inside"] is True
+    assert item["visit_count"] == 1
+
+
+def test_officer_cannot_list_visitor_registry(client, gate_officer_token, activity_officer_token):
+    assert client.get("/visitors", headers=auth_header(gate_officer_token)).status_code == 403
+    assert client.get("/visitors", headers=auth_header(activity_officer_token)).status_code == 403
+
+
+def test_registry_requires_auth(client):
+    assert client.get("/visitors").status_code == 401
+
+
+
 def test_verify_resolves_scanned_payload(client, gate_officer_token):
     created = _register(client, gate_officer_token).json()["visitor"]
     payload = f"VMIS:1:{created['id']}"

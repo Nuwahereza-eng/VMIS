@@ -10,6 +10,14 @@ export const NAV_ITEMS = [
     roles: ["management"],
   },
   {
+    to: "/visitors",
+    label: "Visitors",
+    icon: "bi-people",
+    title: "Visitor registry",
+    subtitle: "Browse every visitor synced to the central system, park-wide",
+    roles: ["management"],
+  },
+  {
     to: "/register",
     label: "Register",
     icon: "bi-person-plus",

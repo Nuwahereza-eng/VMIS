@@ -66,6 +66,19 @@ class VisitorOut(BaseModel):
     server_received_at: datetime | None
 
 
+class VisitorListItem(VisitorOut):
+    # Whether the visitor currently has an open (un-exited) visit.
+    is_inside: bool = False
+    # How many visits this visitor has on record.
+    visit_count: int = 0
+
+
+class VisitorListOut(BaseModel):
+    # Total matching the filter (for pagination), and the current page of rows.
+    total: int
+    items: list[VisitorListItem] = Field(default_factory=list)
+
+
 class DuplicateMatch(BaseModel):
     id: uuid.UUID
     full_name: str

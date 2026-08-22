@@ -10,14 +10,15 @@ record.
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
-from sqlalchemy import select
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.audit import record_audit
 from app.db import get_db
 from app.models.enums import Role
 from app.models.user import User
+from app.models.visit import Visit
 from app.models.visitor import Visitor
 from app.qr import InvalidQrPayload, build_qr_payload, parse_qr_payload, render_qr_png
 from app.rbac import require_roles
@@ -27,6 +28,8 @@ from app.schemas import (
     VerifyRequest,
     VerifyResult,
     VisitorCreate,
+    VisitorListItem,
+    VisitorListOut,
     VisitorOut,
 )
 
@@ -36,6 +39,73 @@ router = APIRouter(prefix="/visitors", tags=["visitors"])
 # Activity-station officers cannot register visitors (build prompt section 6).
 _register_roles = require_roles(Role.GATE_OFFICER, Role.MANAGEMENT)
 _read_roles = require_roles(Role.GATE_OFFICER, Role.ACTIVITY_OFFICER, Role.MANAGEMENT)
+# The park-wide visitor registry is a management view (build prompt section 6):
+# officers only see records synced to their own device, management sees all.
+_registry_roles = require_roles(Role.MANAGEMENT)
+
+
+@router.get("", response_model=VisitorListOut)
+def list_visitors(
+    search: str | None = Query(default=None, max_length=64),
+    category: str | None = Query(default=None, max_length=8),
+    limit: int = Query(default=50, ge=1, le=200),
+    offset: int = Query(default=0, ge=0),
+    db: Session = Depends(get_db),
+    _: User = Depends(_registry_roles),
+) -> VisitorListOut:
+    """Park-wide visitor registry (management only).
+
+    Officers work from their device's local store; management needs to browse
+    every visitor that has reached the system of record. Supports a name/id
+    search and category filter, and is paginated. ``is_inside`` and
+    ``visit_count`` are derived per visitor from the visits table.
+    """
+    filters = []
+    if search:
+        term = f"%{search.strip()}%"
+        filters.append(or_(Visitor.full_name.ilike(term), Visitor.id_number.ilike(term)))
+    if category:
+        filters.append(Visitor.category == category)
+
+    total = db.scalar(select(func.count()).select_from(Visitor).where(*filters)) or 0
+
+    visitors = list(
+        db.scalars(
+            select(Visitor)
+            .where(*filters)
+            .order_by(Visitor.server_received_at.desc().nullslast(), Visitor.created_at.desc())
+            .limit(limit)
+            .offset(offset)
+        ).all()
+    )
+
+    ids = [v.id for v in visitors]
+    open_ids: set[uuid.UUID] = set()
+    counts: dict[uuid.UUID, int] = {}
+    if ids:
+        open_ids = set(
+            db.scalars(
+                select(Visit.visitor_id)
+                .where(Visit.visitor_id.in_(ids), Visit.exit_timestamp.is_(None))
+                .distinct()
+            ).all()
+        )
+        for vid, n in db.execute(
+            select(Visit.visitor_id, func.count())
+            .where(Visit.visitor_id.in_(ids))
+            .group_by(Visit.visitor_id)
+        ).all():
+            counts[vid] = n
+
+    items = [
+        VisitorListItem(
+            **VisitorOut.model_validate(v).model_dump(),
+            is_inside=v.id in open_ids,
+            visit_count=counts.get(v.id, 0),
+        )
+        for v in visitors
+    ]
+    return VisitorListOut(total=total, items=items)
 
 
 @router.post("", response_model=RegistrationResult, status_code=status.HTTP_201_CREATED)
