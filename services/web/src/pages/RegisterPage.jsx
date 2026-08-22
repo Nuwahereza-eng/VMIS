@@ -3,6 +3,7 @@ import { useState } from "react";
 import { useApp } from "../context/AppContext.jsx";
 import { CATEGORIES } from "../domain/categories.js";
 import { findDuplicates, registerVisitor } from "../data/repository.js";
+import PageHeader from "../components/PageHeader.jsx";
 
 const EMPTY = {
   full_name: "",
@@ -49,98 +50,155 @@ export default function RegisterPage() {
   }
 
   return (
-    <div className="row">
-      <div className="col-lg-7">
-        <h2 className="h4 mb-3">Register visitor</h2>
+    <>
+      <PageHeader
+        icon="bi-person-plus"
+        title="Register visitor"
+        subtitle="One record per visitor, saved to this device and synced when online"
+      />
 
-        {saved && (
-          <div className="alert alert-success">
-            Registered <strong>{saved.full_name}</strong> locally. Identifier{" "}
-            <code>{saved.id}</code>. Queued for sync.
-          </div>
-        )}
-        {error && <div className="alert alert-danger">{error}</div>}
-        {duplicates.length > 0 && (
-          <div className="alert alert-warning">
-            <strong>Possible duplicate.</strong> {duplicates.length} existing record(s) share this
-            ID number and name. Review, then submit again to register anyway.
-            <ul className="mb-0 mt-2">
-              {duplicates.map((d) => (
-                <li key={d.id}>
-                  {d.full_name} - {d.id_number}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+      <div className="row g-4">
+        <div className="col-lg-7">
+          {saved && (
+            <div className="alert alert-success">
+              <span>
+                Registered <strong>{saved.full_name}</strong> locally. Identifier{" "}
+                <code>{saved.id}</code>. Queued for sync.
+              </span>
+            </div>
+          )}
+          {error && <div className="alert alert-danger">{error}</div>}
+          {duplicates.length > 0 && (
+            <div className="alert alert-warning">
+              <div>
+                <strong>Possible duplicate.</strong> {duplicates.length} existing record(s) share
+                this ID number and name. Review, then submit again to register anyway.
+                <ul className="mb-0 mt-2">
+                  {duplicates.map((d) => (
+                    <li key={d.id}>
+                      {d.full_name} — {d.id_number}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          )}
 
-        <form onSubmit={onSubmit} className="card card-body shadow-sm">
-          <div className="mb-3">
-            <label className="form-label">Full name</label>
-            <input
-              className="form-control"
-              value={form.full_name}
-              onChange={(e) => update("full_name", e.target.value)}
-              required
-            />
-          </div>
-          <div className="mb-3">
-            <label className="form-label">ID / passport number</label>
-            <input
-              className="form-control"
-              value={form.id_number}
-              onChange={(e) => update("id_number", e.target.value)}
-              required
-            />
-          </div>
-          <div className="mb-3">
-            <label className="form-label">Nationality</label>
-            <input
-              className="form-control"
-              value={form.nationality}
-              onChange={(e) => update("nationality", e.target.value)}
-            />
-          </div>
-          <div className="mb-3">
-            <label className="form-label">Category</label>
-            <select
-              className="form-select"
-              value={form.category}
-              onChange={(e) => update("category", e.target.value)}
+          <form onSubmit={onSubmit} className="surface-card p-4">
+            <div className="card-title-row">
+              <i className="bi bi-person-vcard" />
+              <h2>Visitor details</h2>
+            </div>
+
+            <div className="row g-3">
+              <div className="col-md-12">
+                <label className="form-label">Full name</label>
+                <div className="input-icon">
+                  <i className="bi bi-person" />
+                  <input
+                    className="form-control"
+                    value={form.full_name}
+                    onChange={(e) => update("full_name", e.target.value)}
+                    placeholder="As shown on ID or passport"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="col-md-6">
+                <label className="form-label">ID / passport number</label>
+                <div className="input-icon">
+                  <i className="bi bi-credit-card-2-front" />
+                  <input
+                    className="form-control"
+                    value={form.id_number}
+                    onChange={(e) => update("id_number", e.target.value)}
+                    placeholder="Document number"
+                    required
+                  />
+                </div>
+              </div>
+              <div className="col-md-6">
+                <label className="form-label">Nationality</label>
+                <div className="input-icon">
+                  <i className="bi bi-globe2" />
+                  <input
+                    className="form-control"
+                    value={form.nationality}
+                    onChange={(e) => update("nationality", e.target.value)}
+                    placeholder="Optional"
+                  />
+                </div>
+              </div>
+              <div className="col-md-12">
+                <label className="form-label">Fee category</label>
+                <select
+                  className="form-select"
+                  value={form.category}
+                  onChange={(e) => update("category", e.target.value)}
+                >
+                  {CATEGORIES.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.code} — {c.label} ({c.currency})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            <div
+              className="form-check mt-3 p-3"
+              style={{ background: "var(--vmis-green-50)", borderRadius: "var(--vmis-radius-sm)" }}
             >
+              <input
+                id="privacy"
+                type="checkbox"
+                className="form-check-input"
+                checked={form.privacy_notice_accepted}
+                onChange={(e) => update("privacy_notice_accepted", e.target.checked)}
+              />
+              <label htmlFor="privacy" className="form-check-label" style={{ fontSize: "0.88rem" }}>
+                <i className="bi bi-shield-check me-1" style={{ color: "var(--vmis-green-700)" }} />
+                Visitor was shown and accepted the privacy notice (Data Protection and Privacy Act,
+                2019).
+              </label>
+            </div>
+
+            <button className="btn btn-success mt-4">
+              <i className="bi bi-check2-circle" /> Register visitor
+            </button>
+          </form>
+        </div>
+
+        <div className="col-lg-5">
+          <div className="note-card mb-3">
+            <h3>
+              <i className="bi bi-wifi-off" /> Works offline
+            </h3>
+            <p>
+              Registration is saved to this device immediately with a station-generated identifier,
+              so two gates registering at once can never collide. Records sync to the central system
+              automatically once a connection returns.
+            </p>
+          </div>
+          <div className="surface-card p-4">
+            <div className="card-title-row">
+              <i className="bi bi-tags" />
+              <h3>Fee categories</h3>
+            </div>
+            <div className="d-flex flex-column gap-2">
               {CATEGORIES.map((c) => (
-                <option key={c.code} value={c.code}>
-                  {c.code} - {c.label} ({c.currency})
-                </option>
+                <div key={c.code} className="d-flex justify-content-between align-items-center">
+                  <span>
+                    <span className="pill neutral me-2">{c.code}</span>
+                    <span style={{ fontSize: "0.9rem" }}>{c.label}</span>
+                  </span>
+                  <span className="small-caps">{c.currency}</span>
+                </div>
               ))}
-            </select>
+            </div>
           </div>
-          <div className="form-check mb-3">
-            <input
-              id="privacy"
-              type="checkbox"
-              className="form-check-input"
-              checked={form.privacy_notice_accepted}
-              onChange={(e) => update("privacy_notice_accepted", e.target.checked)}
-            />
-            <label htmlFor="privacy" className="form-check-label">
-              Visitor was shown and accepted the privacy notice (Data Protection and Privacy Act,
-              2019).
-            </label>
-          </div>
-          <button className="btn btn-success">Register</button>
-        </form>
-      </div>
-      <div className="col-lg-5">
-        <div className="card card-body bg-light mt-4 mt-lg-0">
-          <h3 className="h6">Works offline</h3>
-          <p className="small mb-0">
-            Registration is saved to this device immediately and given a station-generated
-            identifier, so two gates registering at once can never collide. The record syncs to the
-            central system when a connection is available.
-          </p>
         </div>
       </div>
-    </div>
+    </>
   );
 }

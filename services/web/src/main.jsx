@@ -4,6 +4,10 @@ import { BrowserRouter } from "react-router-dom";
 import { registerSW } from "virtual:pwa-register";
 
 import "bootstrap/dist/css/bootstrap.min.css";
+import "bootstrap-icons/font/bootstrap-icons.css";
+import "@fontsource-variable/inter";
+import "@fontsource-variable/plus-jakarta-sans";
+import "./styles/theme.css";
 import { AppProvider } from "./context/AppContext.jsx";
 import App from "./App.jsx";
 
