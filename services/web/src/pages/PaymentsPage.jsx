@@ -3,12 +3,21 @@ import { useEffect, useMemo, useState } from "react";
 import { useApp } from "../context/AppContext.jsx";
 import { getActivities, getDashboard } from "../api/client.js";
 import { getMeta, setMeta } from "../db/store.js";
-import { CATEGORY_CURRENCY, formatMinor } from "../domain/categories.js";
+import {
+  CATEGORY_CURRENCY,
+  convertMinor,
+  formatMinor,
+  sumMinorIn,
+  USD_TO_UGX,
+} from "../domain/categories.js";
 import { visitorCode } from "../domain/ids.js";
 import { allActivities, allVisitors } from "../data/repository.js";
 import PageHeader from "../components/PageHeader.jsx";
 
 const CATALOGUE_KEY = "activity_catalogue";
+
+// All revenue totals are reported in this single currency.
+const REPORT_CURRENCY = "UGX";
 
 export default function PaymentsPage() {
   const { session, online } = useApp();
@@ -73,14 +82,18 @@ export default function PaymentsPage() {
     [lines, catalogue, visitors],
   );
 
-  // Local totals per currency, derived from captured activities.
-  const localTotals = useMemo(() => {
-    const totals = {};
-    for (const p of payments) {
-      if (p.amount && p.currency) totals[p.currency] = (totals[p.currency] || 0) + p.amount;
-    }
-    return totals;
-  }, [payments]);
+  // Single-currency device total: convert each captured line into UGX.
+  const localTotal = useMemo(
+    () =>
+      payments.reduce(
+        (total, p) =>
+          p.amount && p.currency
+            ? total + convertMinor(p.amount, p.currency, REPORT_CURRENCY)
+            : total,
+        0,
+      ),
+    [payments],
+  );
 
   return (
     <>
@@ -100,7 +113,7 @@ export default function PaymentsPage() {
               <div className="stat-card__label">Revenue today (central)</div>
               <div className="stat-card__value" style={{ fontSize: "1.2rem" }}>
                 {board && board.revenue_today?.length
-                  ? board.revenue_today.map((r) => formatMinor(r.amount_minor, r.currency)).join(" · ")
+                  ? formatMinor(sumMinorIn(board.revenue_today, REPORT_CURRENCY), REPORT_CURRENCY)
                   : "—"}
               </div>
             </div>
@@ -115,7 +128,7 @@ export default function PaymentsPage() {
               <div className="stat-card__label">Revenue to date (central)</div>
               <div className="stat-card__value" style={{ fontSize: "1.2rem" }}>
                 {board && board.revenue?.length
-                  ? board.revenue.map((r) => formatMinor(r.amount_minor, r.currency)).join(" · ")
+                  ? formatMinor(sumMinorIn(board.revenue, REPORT_CURRENCY), REPORT_CURRENCY)
                   : "—"}
               </div>
             </div>
@@ -129,16 +142,17 @@ export default function PaymentsPage() {
             <div>
               <div className="stat-card__label">Captured on this device</div>
               <div className="stat-card__value" style={{ fontSize: "1.2rem" }}>
-                {Object.keys(localTotals).length
-                  ? Object.entries(localTotals)
-                      .map(([cur, amt]) => formatMinor(amt, cur))
-                      .join(" · ")
-                  : "—"}
+                {localTotal ? formatMinor(localTotal, REPORT_CURRENCY) : "—"}
               </div>
             </div>
           </div>
         </div>
       </div>
+
+      <p className="muted mb-3" style={{ fontSize: "0.8rem" }}>
+        <i className="bi bi-info-circle" /> Totals shown in {REPORT_CURRENCY}; USD amounts
+        converted at 1 USD = {USD_TO_UGX.toLocaleString()} UGX.
+      </p>
 
       <div className="surface-card p-4">
         <div className="card-title-row">
