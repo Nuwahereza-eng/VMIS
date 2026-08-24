@@ -27,7 +27,7 @@ function timeAgo(iso) {
 }
 
 function BreakdownCard({ icon, title, rows, emptyText }) {
-  const max = Math.max(1, ...rows.map((r) => r.count));
+  const total = rows.reduce((s, r) => s + r.count, 0);
   return (
     <div className="surface-card p-4 h-100">
       <div className="card-title-row">
@@ -37,28 +37,18 @@ function BreakdownCard({ icon, title, rows, emptyText }) {
       {rows.length === 0 ? (
         <p className="muted mb-0" style={{ fontSize: "0.9rem" }}>{emptyText}</p>
       ) : (
-        <div className="d-flex flex-column gap-3">
-          {rows.map((r) => (
-            <div key={r.label}>
-              <div className="d-flex justify-content-between mb-1">
-                <span style={{ fontSize: "0.9rem", color: "var(--vmis-ink)", fontWeight: 500 }}>
-                  {r.label}
-                </span>
-                <span className="fw-semibold">{r.count}</span>
-              </div>
-              <div style={{ height: 7, background: "var(--vmis-bg-2)", borderRadius: 99 }}>
-                <div
-                  style={{
-                    width: `${(r.count / max) * 100}%`,
-                    height: "100%",
-                    borderRadius: 99,
-                    background: "linear-gradient(90deg, var(--vmis-green-500), var(--vmis-green-700))",
-                  }}
-                />
-              </div>
-            </div>
-          ))}
-        </div>
+        <ul className="breakdown-list">
+          {rows.map((r) => {
+            const pct = total > 0 ? Math.round((r.count / total) * 100) : 0;
+            return (
+              <li key={r.label} className="breakdown-list__row">
+                <span className="breakdown-list__label">{r.label}</span>
+                <span className="breakdown-list__pct">{pct}%</span>
+                <span className="breakdown-list__count">{r.count}</span>
+              </li>
+            );
+          })}
+        </ul>
       )}
     </div>
   );
