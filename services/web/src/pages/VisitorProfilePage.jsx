@@ -34,7 +34,7 @@ function displayCode(id) {
 }
 
 function formatDateTime(iso) {
-  if (!iso) return "—";
+  if (!iso) return "Not recorded";
   return new Date(iso).toLocaleString(undefined, {
     day: "2-digit",
     month: "short",
@@ -45,7 +45,7 @@ function formatDateTime(iso) {
 }
 
 function formatDate(iso) {
-  if (!iso) return "—";
+  if (!iso) return "Not recorded";
   return new Date(iso).toLocaleDateString(undefined, {
     day: "2-digit",
     month: "short",
@@ -200,11 +200,11 @@ export default function VisitorProfilePage({ visitor, onBack, onScanQr }) {
             </div>
             <div className="vp__name">{visitor.full_name}</div>
             <div className="vp__nat">
-              <i className="bi bi-geo-alt" /> {visitor.country || visitor.nationality || "—"} (
+              <i className="bi bi-geo-alt" /> {visitor.country || visitor.nationality || "Not provided"} (
               {visitor.category})
             </div>
             <div className="vp__meta">Entry: {formatDateTime(openVisit?.entry_timestamp)}</div>
-            <div className="vp__meta">Entry Gate: {openVisit?.entry_gate || "—"}</div>
+            <div className="vp__meta">Entry Gate: {openVisit?.entry_gate || "Not recorded"}</div>
           </div>
           <div className="vp__remaining">
             <div className="vp__remaining-label">
@@ -247,19 +247,19 @@ export default function VisitorProfilePage({ visitor, onBack, onScanQr }) {
               <h3 className="vp__card-title">VISITOR INFORMATION</h3>
               <dl className="vp__info">
                 <dt>Passport No.</dt>
-                <dd>{visitor.id_number || "—"}</dd>
+                <dd>{visitor.id_number || "Not provided"}</dd>
                 <dt>Phone</dt>
-                <dd>{visitor.phone || "—"}</dd>
+                <dd>{visitor.phone || "Not provided"}</dd>
                 <dt>Email</dt>
-                <dd>{visitor.email || "—"}</dd>
+                <dd>{visitor.email || "Not provided"}</dd>
                 <dt>No. of Nights</dt>
-                <dd>{openVisit ? `${openVisit.nights_purchased} Nights` : "—"}</dd>
+                <dd>{openVisit ? `${openVisit.nights_purchased} Nights` : "Not recorded"}</dd>
                 <dt>Category</dt>
                 <dd>{CATEGORY_LABEL[visitor.category] || visitor.category}</dd>
                 <dt>Vehicle Reg.</dt>
-                <dd>{visitor.vehicle_registration || "—"}</dd>
+                <dd>{visitor.vehicle_registration || "Not provided"}</dd>
                 <dt>Tour Operator</dt>
-                <dd>{visitor.tour_company || "—"}</dd>
+                <dd>{visitor.tour_company || "Not provided"}</dd>
               </dl>
             </div>
 
@@ -401,7 +401,7 @@ export default function VisitorProfilePage({ visitor, onBack, onScanQr }) {
                         </td>
                         <td className="muted">{formatDate(p.date)}</td>
                         <td className="text-end">
-                          {p.amount === null ? "—" : formatMinor(p.amount, currency)}
+                          {p.amount === null ? "Not priced" : formatMinor(p.amount, currency)}
                         </td>
                       </tr>
                     ))}

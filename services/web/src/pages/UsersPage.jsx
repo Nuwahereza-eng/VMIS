@@ -200,7 +200,7 @@ export default function UsersPage() {
                           )}
                         </td>
                         <td>{ROLE_LABELS[u.role] || u.role}</td>
-                        <td>{u.station_id || "—"}</td>
+                        <td>{u.station_id || "Not assigned"}</td>
                         <td className="text-end">
                           <span className={"pill " + (u.is_active ? "green" : "expired")}>
                             {u.is_active ? "Active" : "Disabled"}

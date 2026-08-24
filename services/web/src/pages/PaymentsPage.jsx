@@ -117,7 +117,7 @@ export default function PaymentsPage() {
                       sumMinorIn(board.revenue_today, prefs.currency, prefs.usdToUgx),
                       prefs.currency,
                     )
-                  : "—"}
+                  : formatMinor(0, prefs.currency)}
               </div>
             </div>
           </div>
@@ -135,7 +135,7 @@ export default function PaymentsPage() {
                       sumMinorIn(board.revenue, prefs.currency, prefs.usdToUgx),
                       prefs.currency,
                     )
-                  : "—"}
+                  : formatMinor(0, prefs.currency)}
               </div>
             </div>
           </div>
@@ -148,7 +148,7 @@ export default function PaymentsPage() {
             <div>
               <div className="stat-card__label">Captured on this device</div>
               <div className="stat-card__value" style={{ fontSize: "1.2rem" }}>
-                {localTotal ? formatMinor(localTotal, prefs.currency) : "—"}
+                {localTotal ? formatMinor(localTotal, prefs.currency) : formatMinor(0, prefs.currency)}
               </div>
             </div>
           </div>
@@ -198,7 +198,7 @@ export default function PaymentsPage() {
                     </td>
                     <td className="text-end">
                       {p.amount === null || !p.currency
-                        ? "—"
+                        ? "Not priced"
                         : formatMinor(p.amount, p.currency)}
                     </td>
                   </tr>

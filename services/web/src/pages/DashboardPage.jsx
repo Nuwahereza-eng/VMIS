@@ -149,7 +149,7 @@ export default function DashboardPage() {
                   <div className="stat-card__label">Revenue today</div>
                   <div className="stat-card__value" style={{ fontSize: "1.25rem" }}>
                     {(data.revenue_today || []).length === 0
-                      ? "—"
+                      ? formatMinor(0, prefs.currency)
                       : formatMinor(sumMinorIn(data.revenue_today, prefs.currency, prefs.usdToUgx), prefs.currency)}
                   </div>
                 </div>
@@ -173,7 +173,7 @@ export default function DashboardPage() {
                 <div>
                   <div className="stat-card__label">Avg stay</div>
                   <div className="stat-card__value" style={{ fontSize: "1.25rem" }}>
-                    {data.average_stay_hours ? `${data.average_stay_hours} h` : "—"}
+                    {data.average_stay_hours ? `${data.average_stay_hours} h` : "Not enough data"}
                   </div>
                 </div>
               </div>
@@ -204,7 +204,7 @@ export default function DashboardPage() {
               Total revenue to date:{" "}
               <strong style={{ color: "var(--vmis-ink)" }}>
                 {data.revenue.length === 0
-                  ? "—"
+                  ? formatMinor(0, prefs.currency)
                   : formatMinor(sumMinorIn(data.revenue, prefs.currency, prefs.usdToUgx), prefs.currency)}
               </strong>
               <span className="muted" style={{ fontSize: "0.8rem" }}>
@@ -280,7 +280,7 @@ export default function DashboardPage() {
                             <td className="fw-semibold" style={{ color: "var(--vmis-ink)" }}>
                               {v.full_name}
                             </td>
-                            <td>{v.nationality || "—"}</td>
+                            <td>{v.nationality || "Not provided"}</td>
                             <td>
                               <span className="pill neutral">{v.category}</span>
                             </td>

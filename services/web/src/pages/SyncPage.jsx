@@ -85,7 +85,7 @@ export default function SyncPage() {
             <div>
               <div className="stat-card__label">Last sync</div>
               <div className="stat-card__value" style={{ fontSize: "1.05rem" }}>
-                {lastSync ? lastSync.toLocaleTimeString() : "—"}
+                {lastSync ? lastSync.toLocaleTimeString() : "Never"}
               </div>
             </div>
           </div>
@@ -145,7 +145,7 @@ export default function SyncPage() {
                             </span>
                           </td>
                           <td>
-                            <code>{op.entity_id || op.payload.id || "—"}</code>
+                            <code>{op.entity_id || op.payload.id || "Unknown"}</code>
                           </td>
                           <td className="text-end muted" style={{ fontSize: "0.85rem" }}>
                             {new Date(op.queued_at).toLocaleTimeString()}

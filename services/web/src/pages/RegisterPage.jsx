@@ -190,7 +190,7 @@ export default function RegisterPage() {
             <ul className="mb-0 mt-2">
               {duplicates.map((d) => (
                 <li key={d.id}>
-                  {d.full_name} — {d.id_number}
+                  {d.full_name} · {d.id_number}
                 </li>
               ))}
             </ul>
@@ -336,7 +336,7 @@ export default function RegisterPage() {
                 value={form.accommodation}
                 onChange={(e) => update("accommodation", e.target.value)}
               >
-                <option value="">—</option>
+                <option value="">No accommodation</option>
                 {LODGES.map((l) => (
                   <option key={l} value={l}>
                     {l}

@@ -174,7 +174,7 @@ export default function VisitorsPage() {
                       </td>
                       <td className="muted">{v.id_number}</td>
                       <td>{CATEGORY_LABEL[v.category] || v.category}</td>
-                      <td className="muted">{v.nationality || "—"}</td>
+                      <td className="muted">{v.nationality || "Not provided"}</td>
                       <td>{v.visit_count}</td>
                       <td>
                         {v.is_inside ? (

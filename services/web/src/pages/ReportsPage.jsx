@@ -76,7 +76,7 @@ export default function ReportsPage() {
 
   function revenueFor(row, cur) {
     const hit = row.revenue.find((x) => x.currency === cur);
-    return hit ? formatMinor(hit.amount_minor, hit.currency) : "—";
+    return hit ? formatMinor(hit.amount_minor, hit.currency) : formatMinor(0, cur);
   }
 
   return (
@@ -189,7 +189,7 @@ export default function ReportsPage() {
                       const t = totals.revenue.find((x) => x.currency === cur);
                       return (
                         <td key={cur} className="text-end fw-semibold">
-                          {t ? formatMinor(t.amount_minor, t.currency) : "—"}
+                          {t ? formatMinor(t.amount_minor, t.currency) : formatMinor(0, cur)}
                         </td>
                       );
                     })}

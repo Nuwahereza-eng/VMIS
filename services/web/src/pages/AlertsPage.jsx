@@ -79,7 +79,7 @@ function initials(name) {
 }
 
 function formatDateTime(iso) {
-  if (!iso) return "—";
+  if (!iso) return "Not recorded";
   return new Date(iso).toLocaleString(undefined, {
     day: "2-digit",
     month: "short",
@@ -193,7 +193,7 @@ export default function AlertsPage() {
               </div>
               <div>
                 <div className="stat-card__label">{s.label}</div>
-                <div className="stat-card__value">{loading ? "—" : sevCounts[s.key]}</div>
+                <div className="stat-card__value">{loading ? "…" : sevCounts[s.key]}</div>
               </div>
             </div>
           </div>
@@ -294,7 +294,7 @@ export default function AlertsPage() {
                         </div>
                         <div>
                           <span className="alert-item__label">Nationality</span>
-                          <span className="alert-item__value">{a.nationality || "—"}</span>
+                          <span className="alert-item__value">{a.nationality || "Not provided"}</span>
                         </div>
                         <div>
                           <span className="alert-item__label">Entry gate</span>
@@ -310,7 +310,7 @@ export default function AlertsPage() {
                         </div>
                         <div>
                           <span className="alert-item__label">Ticket no.</span>
-                          <span className="alert-item__value">{a.ticket_number || "—"}</span>
+                          <span className="alert-item__value">{a.ticket_number || "Not provided"}</span>
                         </div>
                       </div>
                       <div className={"alert-item__hint alert-item__hint--" + meta.cls}>

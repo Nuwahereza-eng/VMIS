@@ -47,10 +47,10 @@ export default function SettingsPage() {
     }
   }
 
-  const displayName = session?.name || session?.username || "—";
+  const displayName = session?.name || session?.username || "Unknown user";
   const rows = [
-    { label: "Username", value: session?.username || "—" },
-    { label: "Role", value: ROLE_LABELS[session?.role] || session?.role || "—" },
+    { label: "Username", value: session?.username || "Not set" },
+    { label: "Role", value: ROLE_LABELS[session?.role] || session?.role || "Not set" },
     { label: "Station", value: session?.stationId || "Not assigned" },
     { label: "Working mode", value: online ? "Online" : "Offline" },
     { label: "Pending sync operations", value: String(outbox ?? 0) },
