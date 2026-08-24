@@ -23,6 +23,7 @@ export const NAV_ITEMS = [
     icon: "bi-person-plus",
     title: "Register visitor",
     subtitle: "Create a single record per visitor, offline-safe",
+    roles: ["gate_officer", "management"],
   },
   {
     to: "/verify",
@@ -30,6 +31,7 @@ export const NAV_ITEMS = [
     icon: "bi-qr-code-scan",
     title: "Verify visitor",
     subtitle: "Check identity and ticket validity against this device",
+    roles: ["gate_officer", "management"],
   },
   {
     to: "/visits",
@@ -37,6 +39,7 @@ export const NAV_ITEMS = [
     icon: "bi-door-open",
     title: "Entry and exit",
     subtitle: "Record gate movements and track who is inside the park",
+    roles: ["gate_officer", "management"],
   },
   {
     to: "/activities",
@@ -44,6 +47,7 @@ export const NAV_ITEMS = [
     icon: "bi-binoculars",
     title: "Activity capture",
     subtitle: "Log activities per visitor; the server prices them on sync",
+    roles: ["activity_officer", "management"],
   },
   {
     to: "/sync",
@@ -54,3 +58,18 @@ export const NAV_ITEMS = [
     showOutbox: true,
   },
 ];
+
+// Nav items a given role may see. Items without a `roles` list are open to all
+// (e.g. Sync — every officer queues and uploads their own work).
+export function navItemsForRole(role) {
+  return NAV_ITEMS.filter((i) => !i.roles || i.roles.includes(role));
+}
+
+// The landing route for a role is its first permitted nav item: management
+// lands on the dashboard, a gate officer on registration, an activity officer
+// on activity capture. Falls back to Sync if a role somehow has nothing else.
+export function homeForRole(role) {
+  const items = navItemsForRole(role);
+  return items.length ? items[0].to : "/sync";
+}
+

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 
 import { useApp } from "../context/AppContext.jsx";
-import { NAV_ITEMS } from "../nav.js";
+import { navItemsForRole } from "../nav.js";
 
 const ROLE_LABELS = {
   management: "Management",
@@ -22,9 +22,7 @@ export default function Layout({ children }) {
   const location = useLocation();
   const [open, setOpen] = useState(false);
 
-  const items = NAV_ITEMS.filter(
-    (i) => !i.roles || i.roles.includes(session?.role),
-  );
+  const items = navItemsForRole(session?.role);
   const current =
     items.find((i) => location.pathname.startsWith(i.to)) || items[0] || {};
 

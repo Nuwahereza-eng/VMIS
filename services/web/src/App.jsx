@@ -2,6 +2,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 
 import { useApp } from "./context/AppContext.jsx";
 import Layout from "./components/Layout.jsx";
+import { homeForRole, navItemsForRole } from "./nav.js";
 import LoginPage from "./pages/LoginPage.jsx";
 import DashboardPage from "./pages/DashboardPage.jsx";
 import VisitorsPage from "./pages/VisitorsPage.jsx";
@@ -26,19 +27,21 @@ export default function App() {
     return <LoginPage />;
   }
 
-  const isManagement = session.role === "management";
-  const home = isManagement ? "/dashboard" : "/register";
+  // Only render routes this role is permitted to reach, so a deep-link or a
+  // stale bookmark can't land an officer on a page the server would 403.
+  const allowed = new Set(navItemsForRole(session.role).map((i) => i.to));
+  const home = homeForRole(session.role);
 
   return (
     <Layout>
       <Routes>
         <Route path="/" element={<Navigate to={home} replace />} />
-        {isManagement && <Route path="/dashboard" element={<DashboardPage />} />}
-        {isManagement && <Route path="/visitors" element={<VisitorsPage />} />}
-        <Route path="/register" element={<RegisterPage />} />
-        <Route path="/verify" element={<VerifyPage />} />
-        <Route path="/visits" element={<VisitsPage />} />
-        <Route path="/activities" element={<ActivitiesPage />} />
+        {allowed.has("/dashboard") && <Route path="/dashboard" element={<DashboardPage />} />}
+        {allowed.has("/visitors") && <Route path="/visitors" element={<VisitorsPage />} />}
+        {allowed.has("/register") && <Route path="/register" element={<RegisterPage />} />}
+        {allowed.has("/verify") && <Route path="/verify" element={<VerifyPage />} />}
+        {allowed.has("/visits") && <Route path="/visits" element={<VisitsPage />} />}
+        {allowed.has("/activities") && <Route path="/activities" element={<ActivitiesPage />} />}
         <Route path="/sync" element={<SyncPage />} />
         <Route path="*" element={<Navigate to={home} replace />} />
       </Routes>
