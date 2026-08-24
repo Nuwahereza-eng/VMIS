@@ -16,7 +16,6 @@ import {
   accommodationsForVisitor,
   recordExit,
 } from "../data/repository.js";
-import VisitorQrCode from "../components/VisitorQrCode.jsx";
 
 const CATALOGUE_KEY = "activity_catalogue";
 const CATEGORY_LABEL = Object.fromEntries(CATEGORIES.map((c) => [c.code, c.label]));
@@ -451,13 +450,6 @@ export default function VisitorProfilePage({ visitor, onBack, onScanQr }) {
             )}
           </div>
         )}
-
-        {/* QR + footer actions */}
-        <div className="vp__grid mt-1">
-          <div className="surface-card p-4 d-flex justify-content-center">
-            <VisitorQrCode value={visitor.id} label={displayCode(visitor.id)} />
-          </div>
-        </div>
 
         <div className="vp__actions">
           <button className="btn btn-ghost flex-grow-1" onClick={() => navigate("/register")}>
