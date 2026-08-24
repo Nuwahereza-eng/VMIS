@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
+import { useLocation } from "react-router-dom";
 
 import { useApp } from "../context/AppContext.jsx";
 import { getVisitors } from "../api/client.js";
@@ -21,13 +22,16 @@ function initials(name) {
 
 export default function VisitorsPage() {
   const { session, online } = useApp();
-  const [search, setSearch] = useState("");
+  const location = useLocation();
+  const [search, setSearch] = useState(location.state?.search || "");
   const [category, setCategory] = useState("");
   const [page, setPage] = useState(0);
   const [data, setData] = useState({ total: 0, items: [] });
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
+  // A visitor id we were asked to open (e.g. arriving from an alert).
+  const [pendingOpenId, setPendingOpenId] = useState(location.state?.openVisitorId || null);
 
   const load = useCallback(async () => {
     setError(null);
@@ -52,6 +56,16 @@ export default function VisitorsPage() {
     if (online) load();
     else setLoading(false);
   }, [online, load]);
+
+  // When we arrived from an alert, auto-open the matching visitor once loaded.
+  useEffect(() => {
+    if (!pendingOpenId || loading) return;
+    const match = data.items.find((v) => v.id === pendingOpenId);
+    if (match) {
+      setSelected(match);
+      setPendingOpenId(null);
+    }
+  }, [pendingOpenId, loading, data.items]);
 
   function onSearchSubmit(e) {
     e.preventDefault();

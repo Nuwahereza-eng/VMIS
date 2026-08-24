@@ -1,17 +1,52 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import { useApp } from "../context/AppContext.jsx";
 import { getAlerts } from "../api/client.js";
 import { visitorCode } from "../domain/ids.js";
+import { CATEGORIES } from "../domain/categories.js";
 import PageHeader from "../components/PageHeader.jsx";
 
+const CATEGORY_LABEL = Object.fromEntries(CATEGORIES.map((c) => [c.code, c.label]));
+
 // kind -> presentation + severity. `sev` drives sort order and summary buckets.
+// `action` names the concrete next step so the row isn't generic.
 const ALERT_META = {
-  ticket_expired: { label: "Ticket expired", icon: "bi-shield-exclamation", cls: "danger", sev: "critical" },
-  overstay: { label: "Overstay", icon: "bi-exclamation-octagon", cls: "danger", sev: "critical" },
-  expiry_warning: { label: "Expiry warning", icon: "bi-hourglass-split", cls: "warn", sev: "warning" },
-  missing_exit: { label: "Missing exit", icon: "bi-box-arrow-right", cls: "warn", sev: "warning" },
-  duplicate_entry: { label: "Duplicate entry", icon: "bi-files", cls: "info", sev: "info" },
+  ticket_expired: {
+    label: "Ticket expired",
+    icon: "bi-shield-exclamation",
+    cls: "danger",
+    sev: "critical",
+    action: "Locate the visitor and record their exit or renew the ticket.",
+  },
+  overstay: {
+    label: "Overstay",
+    icon: "bi-exclamation-octagon",
+    cls: "danger",
+    sev: "critical",
+    action: "Dispatch a ranger — the visitor is well past their ticket expiry.",
+  },
+  expiry_warning: {
+    label: "Expiry warning",
+    icon: "bi-hourglass-split",
+    cls: "warn",
+    sev: "warning",
+    action: "Remind the visitor to renew or exit before the ticket lapses.",
+  },
+  missing_exit: {
+    label: "Missing exit",
+    icon: "bi-box-arrow-right",
+    cls: "warn",
+    sev: "warning",
+    action: "Confirm whether the visitor already left and record the exit.",
+  },
+  duplicate_entry: {
+    label: "Duplicate entry",
+    icon: "bi-files",
+    cls: "info",
+    sev: "info",
+    action: "Review the open stays and close the erroneous one.",
+  },
 };
 
 const SEV_RANK = { critical: 0, warning: 1, info: 2 };
@@ -23,7 +58,24 @@ const SUMMARY = [
 ];
 
 function metaFor(kind) {
-  return ALERT_META[kind] || { label: kind, icon: "bi-info-circle", cls: "info", sev: "info" };
+  return (
+    ALERT_META[kind] || {
+      label: kind,
+      icon: "bi-info-circle",
+      cls: "info",
+      sev: "info",
+      action: "Open the visitor to investigate.",
+    }
+  );
+}
+
+function initials(name) {
+  return (name || "?")
+    .split(" ")
+    .filter(Boolean)
+    .slice(0, 2)
+    .map((p) => p[0].toUpperCase())
+    .join("");
 }
 
 function formatDateTime(iso) {
@@ -51,10 +103,12 @@ function timeAgo(iso) {
 
 export default function AlertsPage() {
   const { session, online } = useApp();
+  const navigate = useNavigate();
   const [alerts, setAlerts] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("all");
+  const [openRow, setOpenRow] = useState(null);
 
   const load = useCallback(async () => {
     setError(null);
@@ -67,6 +121,17 @@ export default function AlertsPage() {
       setLoading(false);
     }
   }, [session.token]);
+
+  // Open the real problem: jump to the visitor in the registry and auto-open
+  // their profile, pre-filtered by name so management lands on the right record.
+  const openVisitor = useCallback(
+    (a) => {
+      navigate("/visitors", {
+        state: { search: a.visitor_name || "", openVisitorId: a.visitor_id },
+      });
+    },
+    [navigate]
+  );
 
   useEffect(() => {
     if (online) load();
@@ -184,28 +249,80 @@ export default function AlertsPage() {
           <div className="d-flex flex-column gap-2">
             {visible.map((a, i) => {
               const meta = metaFor(a.kind);
+              const rowKey = `${a.visit_id}-${i}`;
+              const isOpen = openRow === rowKey;
+              const name = a.visitor_name || "Unknown visitor";
+              const category = CATEGORY_LABEL[a.visitor_category] || a.visitor_category;
               return (
-                <div key={`${a.visit_id}-${i}`} className={"alert-row alert-row--" + meta.cls}>
-                  <i className={"bi " + meta.icon} />
-                  <div className="flex-grow-1">
-                    <div className="alert-row__head">
-                      <span className="fw-semibold" style={{ color: "var(--vmis-ink)" }}>
-                        {meta.label}
+                <div
+                  key={rowKey}
+                  className={"alert-item alert-item--" + meta.cls + (isOpen ? " is-open" : "")}
+                >
+                  <button
+                    type="button"
+                    className="alert-item__main"
+                    onClick={() => setOpenRow(isOpen ? null : rowKey)}
+                    aria-expanded={isOpen}
+                  >
+                    <span className={"alert-item__avatar avatar avatar--" + meta.cls}>
+                      {initials(a.visitor_name)}
+                    </span>
+                    <span className="alert-item__body">
+                      <span className="alert-item__head">
+                        <span className="alert-item__name">{name}</span>
+                        <span className={"pill " + (meta.cls === "danger" ? "expired" : meta.cls)}>
+                          {meta.label}
+                        </span>
+                        {category && <span className="pill neutral">{category}</span>}
                       </span>
-                      <span className={"pill " + (meta.cls === "danger" ? "expired" : meta.cls)}>
-                        {meta.sev}
+                      <span className="alert-item__detail">{a.detail}</span>
+                      <span className="alert-item__meta">
+                        <span><i className="bi bi-person-badge" /> {visitorCode(a.visitor_id)}</span>
+                        <span><i className="bi bi-geo-alt" /> {a.entry_gate}</span>
+                        <span><i className="bi bi-clock-history" /> {timeAgo(a.entry_timestamp)}</span>
                       </span>
-                      <span className="alert-row__code">{visitorCode(a.visitor_id)}</span>
-                      <span className="alert-row__ago">{timeAgo(a.entry_timestamp)}</span>
+                    </span>
+                    <i className={"bi alert-item__chev " + (isOpen ? "bi-chevron-up" : "bi-chevron-down")} />
+                  </button>
+
+                  {isOpen && (
+                    <div className="alert-item__panel">
+                      <div className="alert-item__facts">
+                        <div>
+                          <span className="alert-item__label">Visitor</span>
+                          <span className="alert-item__value">{name}</span>
+                        </div>
+                        <div>
+                          <span className="alert-item__label">Nationality</span>
+                          <span className="alert-item__value">{a.nationality || "—"}</span>
+                        </div>
+                        <div>
+                          <span className="alert-item__label">Entry gate</span>
+                          <span className="alert-item__value">{a.entry_gate}</span>
+                        </div>
+                        <div>
+                          <span className="alert-item__label">Entered</span>
+                          <span className="alert-item__value">{formatDateTime(a.entry_timestamp)}</span>
+                        </div>
+                        <div>
+                          <span className="alert-item__label">Ticket expiry</span>
+                          <span className="alert-item__value">{formatDateTime(a.expiry_timestamp)}</span>
+                        </div>
+                        <div>
+                          <span className="alert-item__label">Ticket no.</span>
+                          <span className="alert-item__value">{a.ticket_number || "—"}</span>
+                        </div>
+                      </div>
+                      <div className={"alert-item__hint alert-item__hint--" + meta.cls}>
+                        <i className={"bi " + meta.icon} /> {meta.action}
+                      </div>
+                      <div className="alert-item__actions">
+                        <button className="btn btn-success btn-sm" onClick={() => openVisitor(a)}>
+                          <i className="bi bi-person-lines-fill" /> Open visitor profile
+                        </button>
+                      </div>
                     </div>
-                    <div className="muted" style={{ fontSize: "0.85rem" }}>
-                      {a.detail}
-                    </div>
-                    <div className="muted" style={{ fontSize: "0.8rem" }}>
-                      <i className="bi bi-geo-alt" /> {a.entry_gate} · entered{" "}
-                      {formatDateTime(a.entry_timestamp)}
-                    </div>
-                  </div>
+                  )}
                 </div>
               );
             })}

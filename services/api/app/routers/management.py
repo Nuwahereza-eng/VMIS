@@ -76,6 +76,12 @@ def get_alerts(
             entry_gate=a.entry_gate,
             entry_timestamp=a.entry_timestamp,
             detail=a.detail,
+            visitor_name=a.visitor_name,
+            visitor_category=a.visitor_category,
+            nationality=a.nationality,
+            ticket_number=a.ticket_number,
+            nights_purchased=a.nights_purchased,
+            expiry_timestamp=a.expiry_timestamp,
         )
         for a in compute_alerts(db)
     ]

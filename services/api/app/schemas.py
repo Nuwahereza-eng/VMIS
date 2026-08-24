@@ -341,6 +341,12 @@ class AlertOut(BaseModel):
     entry_gate: str
     entry_timestamp: datetime
     detail: str
+    visitor_name: str | None = None
+    visitor_category: str | None = None
+    nationality: str | None = None
+    ticket_number: str | None = None
+    nights_purchased: int | None = None
+    expiry_timestamp: datetime | None = None
 
 
 class CountOut(BaseModel):

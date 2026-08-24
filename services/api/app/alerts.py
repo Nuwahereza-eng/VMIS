@@ -26,6 +26,7 @@ from sqlalchemy.orm import Session
 from app.config import get_settings
 from app.models.base import ensure_utc, utcnow
 from app.models.visit import Visit
+from app.models.visitor import Visitor
 from app.tickets import compute_validity
 
 
@@ -45,6 +46,13 @@ class Alert:
     entry_gate: str
     entry_timestamp: datetime
     detail: str
+    # Visitor + ticket context so the UI can open the real problem directly.
+    visitor_name: str | None = None
+    visitor_category: str | None = None
+    nationality: str | None = None
+    ticket_number: str | None = None
+    nights_purchased: int | None = None
+    expiry_timestamp: datetime | None = None
 
 
 def compute_alerts(db: Session, now: datetime | None = None) -> list[Alert]:
@@ -62,6 +70,25 @@ def compute_alerts(db: Session, now: datetime | None = None) -> list[Alert]:
     open_visits = db.scalars(
         select(Visit).where(Visit.exit_timestamp.is_(None)).order_by(Visit.entry_timestamp)
     ).all()
+
+    # Load the matching visitors once so every alert can carry the visitor's
+    # identity and category, letting the UI open the real problem directly.
+    visitor_ids = {visit.visitor_id for visit in open_visits}
+    visitors_by_id: dict[str, Visitor] = {}
+    if visitor_ids:
+        for visitor in db.scalars(select(Visitor).where(Visitor.id.in_(visitor_ids))).all():
+            visitors_by_id[str(visitor.id)] = visitor
+
+    def context(visit: Visit, visitor_key: str, expiry: datetime | None = None) -> dict:
+        visitor = visitors_by_id.get(visitor_key)
+        return {
+            "visitor_name": visitor.full_name if visitor else None,
+            "visitor_category": visitor.category.value if visitor else None,
+            "nationality": (visitor.nationality if visitor else None),
+            "ticket_number": visit.ticket_number,
+            "nights_purchased": visit.nights_purchased,
+            "expiry_timestamp": expiry,
+        }
 
     alerts: list[Alert] = []
     open_count_by_visitor: dict[str, int] = {}
@@ -85,6 +112,7 @@ def compute_alerts(db: Session, now: datetime | None = None) -> list[Alert]:
                         entry_gate=visit.entry_gate,
                         entry_timestamp=entry,
                         detail=f"Inside {int(overdue.total_seconds() // 3600)}h past ticket expiry",
+                        **context(visit, visitor_key, expiry),
                     )
                 )
             else:
@@ -96,6 +124,7 @@ def compute_alerts(db: Session, now: datetime | None = None) -> list[Alert]:
                         entry_gate=visit.entry_gate,
                         entry_timestamp=entry,
                         detail="Ticket expired while still inside",
+                        **context(visit, visitor_key, expiry),
                     )
                 )
         else:
@@ -117,6 +146,7 @@ def compute_alerts(db: Session, now: datetime | None = None) -> list[Alert]:
                         entry_gate=visit.entry_gate,
                         entry_timestamp=entry,
                         detail=f"Ticket expires in {left}",
+                        **context(visit, visitor_key, expiry),
                     )
                 )
 
@@ -129,6 +159,7 @@ def compute_alerts(db: Session, now: datetime | None = None) -> list[Alert]:
                     entry_gate=visit.entry_gate,
                     entry_timestamp=entry,
                     detail=f"Open for {int((reference - entry).total_seconds() // 3600)}h with no exit",
+                    **context(visit, visitor_key, expiry),
                 )
             )
 
@@ -144,6 +175,7 @@ def compute_alerts(db: Session, now: datetime | None = None) -> list[Alert]:
                     entry_gate=visit.entry_gate,
                     entry_timestamp=ensure_utc(visit.entry_timestamp),
                     detail="Visitor has more than one open stay",
+                    **context(visit, visitor_key),
                 )
             )
 
