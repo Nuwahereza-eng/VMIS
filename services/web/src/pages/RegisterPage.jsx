@@ -1,35 +1,50 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 import { useApp } from "../context/AppContext.jsx";
 import { CATEGORIES } from "../domain/categories.js";
-import { AGE_CATEGORIES, GENDERS } from "../domain/reference.js";
-import { findDuplicates, registerVisitor } from "../data/repository.js";
-import PageHeader from "../components/PageHeader.jsx";
+import { GATES, LODGES } from "../domain/reference.js";
+import { uuid4, visitorCode } from "../domain/ids.js";
+import {
+  findDuplicates,
+  recordAccommodation,
+  recordEntry,
+  registerVisitor,
+} from "../data/repository.js";
 import VisitorQrCode from "../components/VisitorQrCode.jsx";
 
-const EMPTY = {
-  full_name: "",
-  id_number: "",
-  nationality: "",
-  category: "FNR",
-  country: "",
-  age_category: "",
-  gender: "",
-  phone: "",
-  email: "",
-  tour_company: "",
-  vehicle_registration: "",
-  num_visitors: 1,
-  guide_name: "",
-  privacy_notice_accepted: false,
-};
+const NIGHT_OPTIONS = [1, 2, 3, 4, 5, 6, 7, 10, 14];
+
+function emptyForm() {
+  return {
+    // A station-generated id is minted up front so the QR preview and the
+    // saved record share the same identifier.
+    id: uuid4(),
+    full_name: "",
+    id_number: "",
+    nationality: "",
+    category: "FNR",
+    phone: "",
+    email: "",
+    entry_gate: GATES[0],
+    entry_datetime: "",
+    nights_purchased: 3,
+    accommodation: "",
+    vehicle_registration: "",
+    tour_company: "",
+  };
+}
 
 export default function RegisterPage() {
   const { session, refreshOutbox } = useApp();
-  const [form, setForm] = useState(EMPTY);
+  const navigate = useNavigate();
+
+  const [form, setForm] = useState(emptyForm);
   const [duplicates, setDuplicates] = useState([]);
   const [saved, setSaved] = useState(null);
   const [error, setError] = useState(null);
+
+  const code = useMemo(() => visitorCode(form.id), [form.id]);
 
   function update(field, value) {
     setForm((f) => ({ ...f, [field]: value }));
@@ -40,314 +55,275 @@ export default function RegisterPage() {
     setError(null);
     setSaved(null);
 
-    if (!form.privacy_notice_accepted) {
-      setError("The visitor must accept the privacy notice before registration.");
+    if (!form.full_name.trim() || !form.id_number.trim() || !form.nationality.trim()) {
+      setError("Full name, passport / national ID and nationality are required.");
       return;
     }
 
-    // Non-blocking duplicate warning (mirrors the server), unless the officer
-    // has already been shown it and chose to proceed.
     const dupes = await findDuplicates(form.id_number, form.full_name);
     if (dupes.length > 0 && duplicates.length === 0) {
       setDuplicates(dupes);
       return;
     }
 
-    const record = await registerVisitor(form, session.stationId);
+    const visitor = await registerVisitor(
+      {
+        id: form.id,
+        full_name: form.full_name,
+        id_number: form.id_number,
+        nationality: form.nationality,
+        category: form.category,
+        country: form.nationality,
+        phone: form.phone,
+        email: form.email,
+        tour_company: form.tour_company,
+        vehicle_registration: form.vehicle_registration,
+        privacy_notice_accepted: true,
+      },
+      session.stationId,
+    );
+
+    // The mockup registers and admits in one step, so also open the visit.
+    const entryTs = form.entry_datetime
+      ? new Date(form.entry_datetime).toISOString()
+      : new Date().toISOString();
+    await recordEntry(
+      {
+        visitor_id: visitor.id,
+        entry_gate: form.entry_gate,
+        entry_timestamp: entryTs,
+        ticket_number: code,
+        nights_purchased: Number(form.nights_purchased) || 1,
+      },
+      session.stationId,
+    );
+
+    if (form.accommodation) {
+      await recordAccommodation(
+        visitor.id,
+        form.accommodation,
+        Number(form.nights_purchased) || 1,
+      );
+    }
+
     await refreshOutbox();
-    setSaved(record);
-    setForm(EMPTY);
+    setSaved({ ...visitor, code });
     setDuplicates([]);
+    setForm(emptyForm());
   }
 
   return (
-    <>
-      <PageHeader
-        icon="bi-person-plus"
-        title="Register visitor"
-        subtitle="One record per visitor, saved to this device and synced when online"
-      />
-
-      <div className="row g-4">
-        <div className="col-lg-7">
-          {saved && (
-            <div className="alert alert-success">
-              <span>
-                Registered <strong>{saved.full_name}</strong> locally. Identifier{" "}
-                <code>{saved.id}</code>. Queued for sync.
-              </span>
-            </div>
-          )}
-          {error && <div className="alert alert-danger">{error}</div>}
-          {duplicates.length > 0 && (
-            <div className="alert alert-warning">
-              <div>
-                <strong>Possible duplicate.</strong> {duplicates.length} existing record(s) share
-                this ID number and name. Review, then submit again to register anyway.
-                <ul className="mb-0 mt-2">
-                  {duplicates.map((d) => (
-                    <li key={d.id}>
-                      {d.full_name} — {d.id_number}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          )}
-
-          <form onSubmit={onSubmit} className="surface-card p-4">
-            <div className="card-title-row">
-              <i className="bi bi-person-vcard" />
-              <h2>Visitor details</h2>
-            </div>
-
-            <div className="row g-3">
-              <div className="col-md-12">
-                <label className="form-label">Full name</label>
-                <div className="input-icon">
-                  <i className="bi bi-person" />
-                  <input
-                    className="form-control"
-                    value={form.full_name}
-                    onChange={(e) => update("full_name", e.target.value)}
-                    placeholder="As shown on ID or passport"
-                    required
-                  />
-                </div>
-              </div>
-              <div className="col-md-6">
-                <label className="form-label">ID / passport number</label>
-                <div className="input-icon">
-                  <i className="bi bi-credit-card-2-front" />
-                  <input
-                    className="form-control"
-                    value={form.id_number}
-                    onChange={(e) => update("id_number", e.target.value)}
-                    placeholder="Document number"
-                    required
-                  />
-                </div>
-              </div>
-              <div className="col-md-6">
-                <label className="form-label">Nationality</label>
-                <div className="input-icon">
-                  <i className="bi bi-globe2" />
-                  <input
-                    className="form-control"
-                    value={form.nationality}
-                    onChange={(e) => update("nationality", e.target.value)}
-                    placeholder="e.g. Ugandan"
-                  />
-                </div>
-              </div>
-              <div className="col-md-6">
-                <label className="form-label">Country</label>
-                <div className="input-icon">
-                  <i className="bi bi-flag" />
-                  <input
-                    className="form-control"
-                    value={form.country}
-                    onChange={(e) => update("country", e.target.value)}
-                    placeholder="Country of residence"
-                  />
-                </div>
-              </div>
-              <div className="col-md-6">
-                <label className="form-label">Fee category</label>
-                <select
-                  className="form-select"
-                  value={form.category}
-                  onChange={(e) => update("category", e.target.value)}
-                >
-                  {CATEGORIES.map((c) => (
-                    <option key={c.code} value={c.code}>
-                      {c.code} — {c.label} ({c.currency})
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="col-md-3">
-                <label className="form-label">Age category</label>
-                <select
-                  className="form-select"
-                  value={form.age_category}
-                  onChange={(e) => update("age_category", e.target.value)}
-                >
-                  <option value="">—</option>
-                  {AGE_CATEGORIES.map((a) => (
-                    <option key={a} value={a}>
-                      {a}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="col-md-3">
-                <label className="form-label">Gender</label>
-                <select
-                  className="form-select"
-                  value={form.gender}
-                  onChange={(e) => update("gender", e.target.value)}
-                >
-                  <option value="">—</option>
-                  {GENDERS.map((g) => (
-                    <option key={g} value={g}>
-                      {g}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="col-md-6">
-                <label className="form-label">Phone number</label>
-                <div className="input-icon">
-                  <i className="bi bi-telephone" />
-                  <input
-                    className="form-control"
-                    value={form.phone}
-                    onChange={(e) => update("phone", e.target.value)}
-                    placeholder="Optional"
-                  />
-                </div>
-              </div>
-              <div className="col-md-6">
-                <label className="form-label">Email address</label>
-                <div className="input-icon">
-                  <i className="bi bi-envelope" />
-                  <input
-                    type="email"
-                    className="form-control"
-                    value={form.email}
-                    onChange={(e) => update("email", e.target.value)}
-                    placeholder="Optional"
-                  />
-                </div>
-              </div>
-              <div className="col-md-6">
-                <label className="form-label">Tour company</label>
-                <div className="input-icon">
-                  <i className="bi bi-building" />
-                  <input
-                    className="form-control"
-                    value={form.tour_company}
-                    onChange={(e) => update("tour_company", e.target.value)}
-                    placeholder="Tour operator (if any)"
-                  />
-                </div>
-              </div>
-              <div className="col-md-6">
-                <label className="form-label">Vehicle registration</label>
-                <div className="input-icon">
-                  <i className="bi bi-car-front" />
-                  <input
-                    className="form-control"
-                    value={form.vehicle_registration}
-                    onChange={(e) => update("vehicle_registration", e.target.value)}
-                    placeholder="e.g. UAS 123A"
-                  />
-                </div>
-              </div>
-              <div className="col-md-6">
-                <label className="form-label">Number of visitors</label>
-                <div className="input-icon">
-                  <i className="bi bi-people" />
-                  <input
-                    type="number"
-                    min="1"
-                    className="form-control"
-                    value={form.num_visitors}
-                    onChange={(e) => update("num_visitors", e.target.value)}
-                  />
-                </div>
-              </div>
-              <div className="col-md-6">
-                <label className="form-label">Guide name</label>
-                <div className="input-icon">
-                  <i className="bi bi-person-badge" />
-                  <input
-                    className="form-control"
-                    value={form.guide_name}
-                    onChange={(e) => update("guide_name", e.target.value)}
-                    placeholder="Optional"
-                  />
-                </div>
-              </div>
-            </div>
-
-            <div
-              className="form-check mt-3 p-3"
-              style={{ background: "var(--vmis-green-50)", borderRadius: "var(--vmis-radius-sm)" }}
-            >
-              <input
-                id="privacy"
-                type="checkbox"
-                className="form-check-input"
-                checked={form.privacy_notice_accepted}
-                onChange={(e) => update("privacy_notice_accepted", e.target.checked)}
-              />
-              <label htmlFor="privacy" className="form-check-label" style={{ fontSize: "0.88rem" }}>
-                <i className="bi bi-shield-check me-1" style={{ color: "var(--vmis-green-700)" }} />
-                Visitor was shown and accepted the privacy notice (Data Protection and Privacy Act,
-                2019).
-              </label>
-            </div>
-
-            <button className="btn btn-success mt-4">
-              <i className="bi bi-check2-circle" /> Register visitor
-            </button>
-          </form>
-        </div>
-
-        <div className="col-lg-5">
-          {saved && (
-            <div className="surface-card p-4 mb-3 text-center">
-              <div className="card-title-row justify-content-center">
-                <i className="bi bi-qr-code" />
-                <h3>Visitor ticket</h3>
-              </div>
-              <VisitorQrCode value={saved.id} label="Scan at the gate to verify" />
-              <div className="mt-3">
-                <div style={{ color: "var(--vmis-ink)", fontWeight: 600 }}>{saved.full_name}</div>
-                <span className="pill neutral mt-1">{saved.category}</span>
-                <div className="small-caps mt-2">Identifier</div>
-                <code style={{ fontSize: "0.82rem" }}>{saved.id}</code>
-              </div>
-              <button
-                type="button"
-                className="btn btn-ghost btn-sm mt-3"
-                onClick={() => window.print()}
-              >
-                <i className="bi bi-printer" /> Print ticket
-              </button>
-            </div>
-          )}
-          <div className="note-card mb-3">
-            <h3>
-              <i className="bi bi-wifi-off" /> Works offline
-            </h3>
-            <p>
-              Registration is saved to this device immediately with a station-generated identifier,
-              so two gates registering at once can never collide. Records sync to the central system
-              automatically once a connection returns.
-            </p>
-          </div>
-          <div className="surface-card p-4">
-            <div className="card-title-row">
-              <i className="bi bi-tags" />
-              <h3>Fee categories</h3>
-            </div>
-            <div className="d-flex flex-column gap-2">
-              {CATEGORIES.map((c) => (
-                <div key={c.code} className="d-flex justify-content-between align-items-center">
-                  <span>
-                    <span className="pill neutral me-2">{c.code}</span>
-                    <span style={{ fontSize: "0.9rem" }}>{c.label}</span>
-                  </span>
-                  <span className="small-caps">{c.currency}</span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
+    <div className="reg fade-in">
+      <div className="reg__topbar">
+        <button className="vp__back" onClick={() => navigate(-1)} aria-label="Back">
+          <i className="bi bi-arrow-left" />
+        </button>
+        <h1 className="vp__title">Register New Visitor</h1>
       </div>
-    </>
+
+      <div className="reg__body">
+        {saved && (
+          <div className="alert alert-success">
+            Registered <strong>{saved.full_name}</strong> and admitted at {form.entry_gate || "the gate"}.
+            Visitor ID <strong>{saved.code}</strong>. Queued for sync.
+          </div>
+        )}
+        {error && <div className="alert alert-danger">{error}</div>}
+        {duplicates.length > 0 && (
+          <div className="alert alert-warning">
+            <strong>Possible duplicate.</strong> {duplicates.length} record(s) share this ID and
+            name. Review, then submit again to register anyway.
+            <ul className="mb-0 mt-2">
+              {duplicates.map((d) => (
+                <li key={d.id}>
+                  {d.full_name} — {d.id_number}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        <form onSubmit={onSubmit} className="reg__grid">
+          {/* Column 1 — Personal information */}
+          <div className="surface-card p-4">
+            <h3 className="vp__card-title">PERSONAL INFORMATION</h3>
+
+            <div className="reg__field">
+              <label className="form-label">
+                Full Name <span className="reg__req">*</span>
+              </label>
+              <input
+                className="form-control"
+                value={form.full_name}
+                onChange={(e) => update("full_name", e.target.value)}
+                placeholder="e.g. John Smith"
+                required
+              />
+            </div>
+
+            <div className="reg__field">
+              <label className="form-label">
+                Passport / National ID <span className="reg__req">*</span>
+              </label>
+              <input
+                className="form-control"
+                value={form.id_number}
+                onChange={(e) => update("id_number", e.target.value)}
+                placeholder="Document number"
+                required
+              />
+            </div>
+
+            <div className="reg__field">
+              <label className="form-label">
+                Nationality <span className="reg__req">*</span>
+              </label>
+              <input
+                className="form-control"
+                value={form.nationality}
+                onChange={(e) => update("nationality", e.target.value)}
+                placeholder="e.g. United States"
+                required
+              />
+            </div>
+
+            <div className="reg__field">
+              <label className="form-label">
+                Category <span className="reg__req">*</span>
+              </label>
+              <select
+                className="form-select"
+                value={form.category}
+                onChange={(e) => update("category", e.target.value)}
+              >
+                {CATEGORIES.map((c) => (
+                  <option key={c.code} value={c.code}>
+                    {c.label} ({c.code}) · {c.currency}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="reg__field">
+              <label className="form-label">Phone Number</label>
+              <input
+                className="form-control"
+                value={form.phone}
+                onChange={(e) => update("phone", e.target.value)}
+                placeholder="Optional"
+              />
+            </div>
+
+            <div className="reg__field mb-0">
+              <label className="form-label">Email Address</label>
+              <input
+                type="email"
+                className="form-control"
+                value={form.email}
+                onChange={(e) => update("email", e.target.value)}
+                placeholder="Optional"
+              />
+            </div>
+          </div>
+
+          {/* Column 2 — Visit details */}
+          <div className="surface-card p-4">
+            <h3 className="vp__card-title">VISIT DETAILS</h3>
+
+            <div className="reg__field">
+              <label className="form-label">
+                Entry Gate <span className="reg__req">*</span>
+              </label>
+              <select
+                className="form-select"
+                value={form.entry_gate}
+                onChange={(e) => update("entry_gate", e.target.value)}
+              >
+                {GATES.map((g) => (
+                  <option key={g} value={g}>
+                    {g}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="reg__field">
+              <label className="form-label">Entry Date &amp; Time</label>
+              <input
+                type="datetime-local"
+                className="form-control"
+                value={form.entry_datetime}
+                onChange={(e) => update("entry_datetime", e.target.value)}
+              />
+              <div className="form-text">Leave blank to use the current time.</div>
+            </div>
+
+            <div className="reg__field">
+              <label className="form-label">
+                No. of Nights <span className="reg__req">*</span>
+              </label>
+              <select
+                className="form-select"
+                value={form.nights_purchased}
+                onChange={(e) => update("nights_purchased", e.target.value)}
+              >
+                {NIGHT_OPTIONS.map((n) => (
+                  <option key={n} value={n}>
+                    {n} Night{n === 1 ? "" : "s"}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="reg__field">
+              <label className="form-label">Accommodation (if known)</label>
+              <select
+                className="form-select"
+                value={form.accommodation}
+                onChange={(e) => update("accommodation", e.target.value)}
+              >
+                <option value="">—</option>
+                {LODGES.map((l) => (
+                  <option key={l} value={l}>
+                    {l}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            <div className="reg__field">
+              <label className="form-label">Vehicle Registration</label>
+              <input
+                className="form-control"
+                value={form.vehicle_registration}
+                onChange={(e) => update("vehicle_registration", e.target.value)}
+                placeholder="e.g. UAS 123A"
+              />
+            </div>
+
+            <div className="reg__field mb-0">
+              <label className="form-label">Tour Operator</label>
+              <input
+                className="form-control"
+                value={form.tour_company}
+                onChange={(e) => update("tour_company", e.target.value)}
+                placeholder="Optional"
+              />
+            </div>
+          </div>
+
+          {/* Column 3 — Visitor preview */}
+          <div className="surface-card p-4 reg__preview">
+            <h3 className="vp__card-title text-center">VISITOR PREVIEW</h3>
+            <VisitorQrCode value={form.id} size={168} />
+            <div className="reg__preview-idlabel">Visitor ID</div>
+            <div className="reg__preview-code">{code}</div>
+            <button type="submit" className="btn btn-success w-100 mt-3">
+              <i className="bi bi-qr-code" /> Generate QR &amp; Register
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }

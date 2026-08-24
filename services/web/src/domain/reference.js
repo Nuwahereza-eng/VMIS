@@ -15,6 +15,16 @@ export const LODGES = [
   "Outside the park",
 ];
 
+// Murchison Falls entry gates (matches the dashboard breakdown).
+export const GATES = [
+  "Kichumbanyobo Gate",
+  "Tangi Gate",
+  "Bugungu Gate",
+  "Wankwar Gate",
+  "Chobe Gate",
+  "Mubako Gate",
+];
+
 export const AGE_CATEGORIES = ["Adult", "Child", "Infant", "Senior"];
 
 export const GENDERS = ["Female", "Male", "Other"];

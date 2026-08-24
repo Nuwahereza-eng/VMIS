@@ -23,3 +23,10 @@ export function uuid4() {
     hex.slice(10, 16).join("")
   );
 }
+
+// A short, human-facing visitor code derived from the station-generated UUID
+// (e.g. "VM-1A2B3C4D"). Display only; the QR still encodes the full id.
+export function visitorCode(id) {
+  return "VM-" + String(id || "").replace(/-/g, "").slice(0, 8).toUpperCase();
+}
+
