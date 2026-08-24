@@ -565,6 +565,61 @@ code {
 .alert-row--info { border-left-color: var(--vmis-info); }
 .alert-row--info > i { color: var(--vmis-info); }
 
+.alert-row__head {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.15rem;
+}
+.alert-row__head .pill { text-transform: capitalize; padding: 0.16rem 0.5rem; font-size: 0.68rem; }
+.alert-row__code {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--vmis-green-700);
+  letter-spacing: 0.02em;
+}
+.alert-row__ago { margin-left: auto; font-size: 0.76rem; color: var(--vmis-muted); }
+
+/* Filter chips (Alerts page). */
+.filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-bottom: 1rem;
+}
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid var(--vmis-line);
+  background: var(--vmis-surface);
+  color: var(--vmis-body);
+  border-radius: 999px;
+  padding: 0.32rem 0.75rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.filter-chip:hover { border-color: var(--vmis-green-600); color: var(--vmis-green-700); }
+.filter-chip.is-active {
+  background: var(--vmis-green-700);
+  border-color: var(--vmis-green-700);
+  color: #fff;
+}
+.filter-chip__n {
+  font-size: 0.72rem;
+  font-weight: 700;
+  background: var(--vmis-bg-2);
+  color: var(--vmis-body);
+  border-radius: 999px;
+  padding: 0.02rem 0.4rem;
+  min-width: 1.15rem;
+  text-align: center;
+}
+.filter-chip.is-active .filter-chip__n { background: rgba(255, 255, 255, 0.25); color: #fff; }
+
 /* Working-mode card at the foot of the sidebar. */
 .working-mode {
   border-radius: var(--vmis-radius-sm);
