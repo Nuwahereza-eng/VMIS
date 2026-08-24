@@ -458,7 +458,10 @@ export default function VisitorProfilePage({ visitor, onBack, onScanQr }) {
         )}
 
         <div className="vp__actions">
-          <button className="btn btn-ghost flex-grow-1" onClick={() => navigate("/register")}>
+          <button
+            className="btn btn-ghost flex-grow-1"
+            onClick={() => navigate("/register", { state: { visitor } })}
+          >
             <i className="bi bi-pencil-square" /> Update Visitor
           </button>
           <button

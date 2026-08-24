@@ -1,5 +1,5 @@
 import { useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 import { useApp } from "../context/AppContext.jsx";
 import { CATEGORIES } from "../domain/categories.js";
@@ -35,11 +35,38 @@ function emptyForm() {
   };
 }
 
+// Prefill the form from an existing visitor when arriving via "Update Visitor".
+function formFromVisitor(v) {
+  return {
+    id: v.id,
+    full_name: v.full_name || "",
+    id_number: v.id_number || "",
+    nationality: v.nationality || v.country || "",
+    category: v.category || "FNR",
+    phone: v.phone || "",
+    email: v.email || "",
+    entry_gate: GATES[0],
+    entry_datetime: "",
+    nights_purchased: 3,
+    accommodation: "",
+    vehicle_registration: v.vehicle_registration || "",
+    tour_company: v.tour_company || "",
+  };
+}
+
 export default function RegisterPage() {
   const { session, refreshOutbox } = useApp();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const [form, setForm] = useState(emptyForm);
+  // When "Update Visitor" sends us here, we edit that record instead of
+  // creating a new one (and skip opening a fresh gate entry).
+  const editingVisitor = location.state?.visitor || null;
+  const isEditing = Boolean(editingVisitor);
+
+  const [form, setForm] = useState(() =>
+    editingVisitor ? formFromVisitor(editingVisitor) : emptyForm(),
+  );
   const [duplicates, setDuplicates] = useState([]);
   const [saved, setSaved] = useState(null);
   const [error, setError] = useState(null);
@@ -61,10 +88,13 @@ export default function RegisterPage() {
       return;
     }
 
-    const dupes = await findDuplicates(form.id_number, form.full_name);
-    if (dupes.length > 0 && duplicates.length === 0) {
-      setDuplicates(dupes);
-      return;
+    // Only guard against duplicates when creating a brand-new visitor.
+    if (!isEditing) {
+      const dupes = await findDuplicates(form.id_number, form.full_name);
+      if (dupes.length > 0 && duplicates.length === 0) {
+        setDuplicates(dupes);
+        return;
+      }
     }
 
     setBusy(true);
@@ -86,35 +116,42 @@ export default function RegisterPage() {
         session.stationId,
       );
 
-      // The mockup registers and admits in one step, so also open the visit.
-      const entryTs = form.entry_datetime
-        ? new Date(form.entry_datetime).toISOString()
-        : new Date().toISOString();
-      await recordEntry(
-        {
-          visitor_id: visitor.id,
-          entry_gate: form.entry_gate,
-          entry_timestamp: entryTs,
-          ticket_number: code,
-          nights_purchased: Number(form.nights_purchased) || 1,
-        },
-        session.stationId,
-      );
-
-      if (form.accommodation) {
-        await recordAccommodation(
-          visitor.id,
-          form.accommodation,
-          Number(form.nights_purchased) || 1,
+      // Editing only updates the visitor's details — no new gate entry. A fresh
+      // registration also admits the visitor in one step (per the mockup).
+      if (!isEditing) {
+        const entryTs = form.entry_datetime
+          ? new Date(form.entry_datetime).toISOString()
+          : new Date().toISOString();
+        await recordEntry(
+          {
+            visitor_id: visitor.id,
+            entry_gate: form.entry_gate,
+            entry_timestamp: entryTs,
+            ticket_number: code,
+            nights_purchased: Number(form.nights_purchased) || 1,
+          },
+          session.stationId,
         );
+
+        if (form.accommodation) {
+          await recordAccommodation(
+            visitor.id,
+            form.accommodation,
+            Number(form.nights_purchased) || 1,
+          );
+        }
       }
 
       await refreshOutbox();
-      setSaved({ ...visitor, code });
+      setSaved({ ...visitor, code, edited: isEditing });
       setDuplicates([]);
-      setForm(emptyForm());
+      if (!isEditing) setForm(emptyForm());
     } catch {
-      setError("Could not complete the registration. Please try again.");
+      setError(
+        isEditing
+          ? "Could not save the changes. Please try again."
+          : "Could not complete the registration. Please try again.",
+      );
     } finally {
       setBusy(false);
     }
@@ -126,14 +163,23 @@ export default function RegisterPage() {
         <button className="vp__back" onClick={() => navigate(-1)} aria-label="Back">
           <i className="bi bi-arrow-left" />
         </button>
-        <h1 className="vp__title">Register New Visitor</h1>
+        <h1 className="vp__title">{isEditing ? "Update Visitor" : "Register New Visitor"}</h1>
       </div>
 
       <div className="reg__body">
         {saved && (
           <div className="alert alert-success">
-            Registered <strong>{saved.full_name}</strong> and admitted at {form.entry_gate || "the gate"}.
-            Visitor ID <strong>{saved.code}</strong>. Queued for sync.
+            {saved.edited ? (
+              <>
+                Updated <strong>{saved.full_name}</strong>. Changes queued for sync.
+              </>
+            ) : (
+              <>
+                Registered <strong>{saved.full_name}</strong> and admitted at{" "}
+                {form.entry_gate || "the gate"}. Visitor ID <strong>{saved.code}</strong>. Queued
+                for sync.
+              </>
+            )}
           </div>
         )}
         {error && <div className="alert alert-danger">{error}</div>}
@@ -327,8 +373,14 @@ export default function RegisterPage() {
             <div className="reg__preview-idlabel">Visitor ID</div>
             <div className="reg__preview-code">{code}</div>
             <button type="submit" className={"btn btn-success w-100 mt-3" + (busy ? " is-busy" : "")} disabled={busy}>
-              <i className={"bi " + (busy ? "bi-arrow-repeat spin" : "bi-qr-code")} />{" "}
-              {busy ? "Registering…" : "Generate QR & Register"}
+              <i className={"bi " + (busy ? "bi-arrow-repeat spin" : isEditing ? "bi-check2-circle" : "bi-qr-code")} />{" "}
+              {busy
+                ? isEditing
+                  ? "Saving…"
+                  : "Registering…"
+                : isEditing
+                  ? "Save changes"
+                  : "Generate QR & Register"}
             </button>
           </div>
         </form>
