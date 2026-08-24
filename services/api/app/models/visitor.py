@@ -22,6 +22,18 @@ class Visitor(UUIDPrimaryKeyMixin, TimestampMixin, SyncMixin, Base):
     id_number: Mapped[str] = mapped_column(String(64), nullable=False, index=True)
     nationality: Mapped[str | None] = mapped_column(String(64), nullable=True)
 
+    # Extended visitor profile (build prompt section 8.A). All optional so that
+    # a fast gate registration stays possible; management can enrich later.
+    country: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    age_category: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    gender: Mapped[str | None] = mapped_column(String(16), nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    email: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    tour_company: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    vehicle_registration: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    num_visitors: Mapped[int] = mapped_column(default=1, nullable=False)
+    guide_name: Mapped[str | None] = mapped_column(String(128), nullable=True)
+
     category: Mapped[VisitorCategory] = mapped_column(
         Enum(VisitorCategory, native_enum=False, length=8), nullable=False
     )

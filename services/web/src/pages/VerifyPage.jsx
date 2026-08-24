@@ -3,7 +3,12 @@ import { useState } from "react";
 import QrScanner from "../components/QrScanner.jsx";
 import { verifyLocal } from "../data/repository.js";
 import { computeValidity } from "../domain/tickets.js";
-import { visitsForVisitor } from "../data/repository.js";
+import TicketCountdown from "../components/TicketCountdown.jsx";
+import {
+  visitsForVisitor,
+  activitiesForVisitor,
+  accommodationsForVisitor,
+} from "../data/repository.js";
 import PageHeader from "../components/PageHeader.jsx";
 
 export default function VerifyPage() {
@@ -11,6 +16,9 @@ export default function VerifyPage() {
   const [scanning, setScanning] = useState(false);
   const [result, setResult] = useState(null);
   const [ticket, setTicket] = useState(null);
+  const [openVisit, setOpenVisit] = useState(null);
+  const [activities, setActivities] = useState([]);
+  const [accommodations, setAccommodations] = useState([]);
   const [searched, setSearched] = useState(false);
 
   async function lookup(value) {
@@ -18,12 +26,18 @@ export default function VerifyPage() {
     setSearched(true);
     setResult(visitor || null);
     setTicket(null);
+    setOpenVisit(null);
+    setActivities([]);
+    setAccommodations([]);
     if (visitor) {
       const visits = await visitsForVisitor(visitor.id);
       const open = visits.find((v) => !v.exit_timestamp);
       if (open) {
+        setOpenVisit(open);
         setTicket(computeValidity(open.entry_timestamp, open.nights_purchased));
       }
+      setActivities(await activitiesForVisitor(visitor.id));
+      setAccommodations(await accommodationsForVisitor(visitor.id));
     }
   }
 
@@ -37,8 +51,6 @@ export default function VerifyPage() {
     setPayload(decoded);
     lookup(decoded);
   }
-
-  const active = ticket?.status === "Active";
 
   return (
     <>
@@ -125,34 +137,81 @@ export default function VerifyPage() {
                   <dd className="col-7">{result.id_number}</dd>
                   <dt className="col-5 small-caps">Nationality</dt>
                   <dd className="col-7">{result.nationality || "—"}</dd>
+                  {result.country && (
+                    <>
+                      <dt className="col-5 small-caps">Country</dt>
+                      <dd className="col-7">{result.country}</dd>
+                    </>
+                  )}
+                  {result.phone && (
+                    <>
+                      <dt className="col-5 small-caps">Phone</dt>
+                      <dd className="col-7">{result.phone}</dd>
+                    </>
+                  )}
+                  {result.email && (
+                    <>
+                      <dt className="col-5 small-caps">Email</dt>
+                      <dd className="col-7">{result.email}</dd>
+                    </>
+                  )}
+                  {result.tour_company && (
+                    <>
+                      <dt className="col-5 small-caps">Tour company</dt>
+                      <dd className="col-7">{result.tour_company}</dd>
+                    </>
+                  )}
+                  {result.vehicle_registration && (
+                    <>
+                      <dt className="col-5 small-caps">Vehicle</dt>
+                      <dd className="col-7">{result.vehicle_registration}</dd>
+                    </>
+                  )}
+                  {result.guide_name && (
+                    <>
+                      <dt className="col-5 small-caps">Guide</dt>
+                      <dd className="col-7">{result.guide_name}</dd>
+                    </>
+                  )}
+                  {Number(result.num_visitors) > 1 && (
+                    <>
+                      <dt className="col-5 small-caps">Party size</dt>
+                      <dd className="col-7">{result.num_visitors}</dd>
+                    </>
+                  )}
+                  {openVisit && (
+                    <>
+                      <dt className="col-5 small-caps">Ticket no.</dt>
+                      <dd className="col-7">{openVisit.ticket_number}</dd>
+                    </>
+                  )}
                 </dl>
 
                 {ticket ? (
-                  <div
-                    className="mt-3 p-3 d-flex align-items-center gap-3"
-                    style={{
-                      borderRadius: "var(--vmis-radius-sm)",
-                      background: active ? "var(--vmis-green-50)" : "#fbeceb",
-                    }}
-                  >
-                    <i
-                      className={"bi " + (active ? "bi-shield-check" : "bi-shield-exclamation")}
-                      style={{ fontSize: "1.6rem", color: active ? "var(--vmis-green-600)" : "var(--vmis-danger)" }}
-                    />
-                    <div>
-                      <div className="fw-semibold" style={{ color: "var(--vmis-ink)" }}>
-                        Ticket {ticket.status}
-                      </div>
-                      <div className="muted" style={{ fontSize: "0.85rem" }}>
-                        Expires {ticket.expiry.toLocaleString()}
-                      </div>
-                    </div>
-                  </div>
+                  <TicketCountdown
+                    entryTimestamp={openVisit.entry_timestamp}
+                    nightsPurchased={openVisit.nights_purchased}
+                  />
                 ) : (
                   <div className="alert alert-info mt-3 mb-0">
                     No open visit on this device for this visitor.
                   </div>
                 )}
+
+                <div className="d-flex gap-2 mt-3">
+                  <span className="pill neutral">
+                    <i className="bi bi-compass me-1" />
+                    {activities.length} activit{activities.length === 1 ? "y" : "ies"}
+                  </span>
+                  <span className="pill neutral">
+                    <i className="bi bi-house-door me-1" />
+                    {accommodations.length
+                      ? accommodations
+                          .map((a) => `${a.facility} (${a.nights}n)`)
+                          .join(", ")
+                      : "No accommodation"}
+                  </span>
+                </div>
               </div>
             </div>
           )}

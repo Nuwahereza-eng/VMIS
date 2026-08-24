@@ -59,6 +59,15 @@ class _VisitorPayload(BaseModel):
     category: VisitorCategory
     privacy_notice_accepted: bool
     nationality: str | None = None
+    country: str | None = None
+    age_category: str | None = None
+    gender: str | None = None
+    phone: str | None = None
+    email: str | None = None
+    tour_company: str | None = None
+    vehicle_registration: str | None = None
+    num_visitors: int = 1
+    guide_name: str | None = None
     origin_station_id: str | None = None
     client_created_at: datetime | None = None
 
@@ -147,6 +156,15 @@ def _apply_visitor(db: Session, op: SyncOp, station_id: str | None, actor: User)
         id_number=data.id_number,
         nationality=data.nationality,
         category=data.category,
+        country=data.country,
+        age_category=data.age_category,
+        gender=data.gender,
+        phone=data.phone,
+        email=data.email,
+        tour_company=data.tour_company,
+        vehicle_registration=data.vehicle_registration,
+        num_visitors=data.num_visitors,
+        guide_name=data.guide_name,
         privacy_notice_accepted=data.privacy_notice_accepted,
         origin_station_id=data.origin_station_id or station_id,
         client_created_at=data.client_created_at,

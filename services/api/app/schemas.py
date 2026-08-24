@@ -45,6 +45,16 @@ class VisitorCreate(BaseModel):
     id_number: str = Field(min_length=1, max_length=64)
     nationality: str | None = Field(default=None, max_length=64)
     category: VisitorCategory
+    # Extended profile (build prompt section 8.A); all optional.
+    country: str | None = Field(default=None, max_length=64)
+    age_category: str | None = Field(default=None, max_length=16)
+    gender: str | None = Field(default=None, max_length=16)
+    phone: str | None = Field(default=None, max_length=32)
+    email: str | None = Field(default=None, max_length=128)
+    tour_company: str | None = Field(default=None, max_length=128)
+    vehicle_registration: str | None = Field(default=None, max_length=32)
+    num_visitors: int = Field(default=1, ge=1, le=999)
+    guide_name: str | None = Field(default=None, max_length=128)
     # A privacy notice must be shown and acknowledged at registration
     # (Data Protection and Privacy Act, 2019).
     privacy_notice_accepted: bool
@@ -61,6 +71,15 @@ class VisitorOut(BaseModel):
     id_number: str
     nationality: str | None
     category: VisitorCategory
+    country: str | None = None
+    age_category: str | None = None
+    gender: str | None = None
+    phone: str | None = None
+    email: str | None = None
+    tour_company: str | None = None
+    vehicle_registration: str | None = None
+    num_visitors: int = 1
+    guide_name: str | None = None
     privacy_notice_accepted: bool
     origin_station_id: str | None
     server_received_at: datetime | None
@@ -337,11 +356,16 @@ class StationSyncOut(BaseModel):
 
 class DashboardOut(BaseModel):
     inside_now: int
+    entered_today: int = 0
+    exited_today: int = 0
+    expired_tickets: int = 0
+    average_stay_hours: float = 0.0
     by_gate: list[CountOut]
     by_category: list[CountOut]
     by_activity: list[CountOut]
     by_lodge: list[CountOut]
     revenue: list[CurrencyTotal]
+    revenue_today: list[CurrencyTotal] = Field(default_factory=list)
     stations: list[StationSyncOut]
     alert_counts: list[CountOut]
 

@@ -45,11 +45,16 @@ def get_dashboard(
     board = build_dashboard(db)
     return DashboardOut(
         inside_now=board.inside_now,
+        entered_today=board.entered_today,
+        exited_today=board.exited_today,
+        expired_tickets=board.expired_tickets,
+        average_stay_hours=board.average_stay_hours,
         by_gate=[CountOut(label=c.label, count=c.count) for c in board.by_gate],
         by_category=[CountOut(label=c.label, count=c.count) for c in board.by_category],
         by_activity=[CountOut(label=c.label, count=c.count) for c in board.by_activity],
         by_lodge=[CountOut(label=c.label, count=c.count) for c in board.by_lodge],
         revenue=[CurrencyTotal(currency=r.currency, amount_minor=r.amount_minor) for r in board.revenue],
+        revenue_today=[CurrencyTotal(currency=r.currency, amount_minor=r.amount_minor) for r in board.revenue_today],
         stations=[
             StationSyncOut(station_id=s.station_id, last_sync_at=s.last_sync_at, operations=s.operations)
             for s in board.stations

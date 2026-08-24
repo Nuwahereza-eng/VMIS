@@ -22,6 +22,15 @@ export async function registerVisitor(input, station) {
     id_number: input.id_number,
     nationality: input.nationality || null,
     category: input.category,
+    country: input.country || null,
+    age_category: input.age_category || null,
+    gender: input.gender || null,
+    phone: input.phone || null,
+    email: input.email || null,
+    tour_company: input.tour_company || null,
+    vehicle_registration: input.vehicle_registration || null,
+    num_visitors: Number(input.num_visitors) || 1,
+    guide_name: input.guide_name || null,
     privacy_notice_accepted: Boolean(input.privacy_notice_accepted),
     origin_station_id: station || null,
     client_created_at: nowIso(),
@@ -34,6 +43,15 @@ export async function registerVisitor(input, station) {
     id_number: record.id_number,
     nationality: record.nationality,
     category: record.category,
+    country: record.country,
+    age_category: record.age_category,
+    gender: record.gender,
+    phone: record.phone,
+    email: record.email,
+    tour_company: record.tour_company,
+    vehicle_registration: record.vehicle_registration,
+    num_visitors: record.num_visitors,
+    guide_name: record.guide_name,
     privacy_notice_accepted: record.privacy_notice_accepted,
     origin_station_id: record.origin_station_id,
     client_created_at: record.client_created_at,
@@ -152,6 +170,10 @@ export async function captureActivity(visitorId, activityId, quantity, category,
 
 export async function activitiesForVisitor(visitorId) {
   return getAllByIndex(STORES.activities, "visitor_id", visitorId);
+}
+
+export async function accommodationsForVisitor(visitorId) {
+  return getAllByIndex(STORES.accommodations, "visitor_id", visitorId);
 }
 
 export async function recordAccommodation(visitorId, facility, nights) {

@@ -122,13 +122,54 @@ export default function DashboardPage() {
             </div>
             <div className="col-sm-6 col-xl-3">
               <div className="stat-card">
+                <div className="stat-card__icon info"><i className="bi bi-box-arrow-in-right" /></div>
+                <div>
+                  <div className="stat-card__label">Visitors today</div>
+                  <div className="stat-card__value">{data.entered_today ?? 0}</div>
+                </div>
+              </div>
+            </div>
+            <div className="col-sm-6 col-xl-3">
+              <div className="stat-card">
+                <div className="stat-card__icon warn"><i className="bi bi-hourglass-bottom" /></div>
+                <div>
+                  <div className="stat-card__label">Expired tickets</div>
+                  <div className="stat-card__value">{data.expired_tickets ?? 0}</div>
+                </div>
+              </div>
+            </div>
+            <div className="col-sm-6 col-xl-3">
+              <div className="stat-card">
                 <div className="stat-card__icon gold"><i className="bi bi-cash-stack" /></div>
                 <div>
-                  <div className="stat-card__label">Revenue</div>
+                  <div className="stat-card__label">Revenue today</div>
                   <div className="stat-card__value" style={{ fontSize: "1.25rem" }}>
-                    {data.revenue.length === 0
+                    {(data.revenue_today || []).length === 0
                       ? "—"
-                      : data.revenue.map((r) => formatMinor(r.amount_minor, r.currency)).join(" · ")}
+                      : data.revenue_today.map((r) => formatMinor(r.amount_minor, r.currency)).join(" · ")}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="row g-3 mb-1">
+            <div className="col-sm-6 col-xl-3">
+              <div className="stat-card">
+                <div className="stat-card__icon info"><i className="bi bi-box-arrow-right" /></div>
+                <div>
+                  <div className="stat-card__label">Exited today</div>
+                  <div className="stat-card__value">{data.exited_today ?? 0}</div>
+                </div>
+              </div>
+            </div>
+            <div className="col-sm-6 col-xl-3">
+              <div className="stat-card">
+                <div className="stat-card__icon green"><i className="bi bi-clock-history" /></div>
+                <div>
+                  <div className="stat-card__label">Avg stay</div>
+                  <div className="stat-card__value" style={{ fontSize: "1.25rem" }}>
+                    {data.average_stay_hours ? `${data.average_stay_hours} h` : "—"}
                   </div>
                 </div>
               </div>
@@ -151,6 +192,18 @@ export default function DashboardPage() {
                 </div>
               </div>
             </div>
+          </div>
+
+          <div className="surface-card p-3 mb-1">
+            <span className="muted" style={{ fontSize: "0.85rem" }}>
+              <i className="bi bi-cash-coin me-1" />
+              Total revenue to date:{" "}
+              <strong style={{ color: "var(--vmis-ink)" }}>
+                {data.revenue.length === 0
+                  ? "—"
+                  : data.revenue.map((r) => formatMinor(r.amount_minor, r.currency)).join(" · ")}
+              </strong>
+            </span>
           </div>
 
           <div className="row g-3 mt-1">

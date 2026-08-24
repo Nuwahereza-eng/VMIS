@@ -10,6 +10,7 @@ import RegisterPage from "./pages/RegisterPage.jsx";
 import VerifyPage from "./pages/VerifyPage.jsx";
 import ActivitiesPage from "./pages/ActivitiesPage.jsx";
 import VisitsPage from "./pages/VisitsPage.jsx";
+import ReportsPage from "./pages/ReportsPage.jsx";
 import SyncPage from "./pages/SyncPage.jsx";
 
 export default function App() {
@@ -42,6 +43,7 @@ export default function App() {
         {allowed.has("/verify") && <Route path="/verify" element={<VerifyPage />} />}
         {allowed.has("/visits") && <Route path="/visits" element={<VisitsPage />} />}
         {allowed.has("/activities") && <Route path="/activities" element={<ActivitiesPage />} />}
+        {allowed.has("/reports") && <Route path="/reports" element={<ReportsPage />} />}
         <Route path="/sync" element={<SyncPage />} />
         <Route path="*" element={<Navigate to={home} replace />} />
       </Routes>

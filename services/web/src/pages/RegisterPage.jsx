@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { useApp } from "../context/AppContext.jsx";
 import { CATEGORIES } from "../domain/categories.js";
+import { AGE_CATEGORIES, GENDERS } from "../domain/reference.js";
 import { findDuplicates, registerVisitor } from "../data/repository.js";
 import PageHeader from "../components/PageHeader.jsx";
 
@@ -10,6 +11,15 @@ const EMPTY = {
   id_number: "",
   nationality: "",
   category: "FNR",
+  country: "",
+  age_category: "",
+  gender: "",
+  phone: "",
+  email: "",
+  tour_company: "",
+  vehicle_registration: "",
+  num_visitors: 1,
+  guide_name: "",
   privacy_notice_accepted: false,
 };
 
@@ -125,11 +135,23 @@ export default function RegisterPage() {
                     className="form-control"
                     value={form.nationality}
                     onChange={(e) => update("nationality", e.target.value)}
-                    placeholder="Optional"
+                    placeholder="e.g. Ugandan"
                   />
                 </div>
               </div>
-              <div className="col-md-12">
+              <div className="col-md-6">
+                <label className="form-label">Country</label>
+                <div className="input-icon">
+                  <i className="bi bi-flag" />
+                  <input
+                    className="form-control"
+                    value={form.country}
+                    onChange={(e) => update("country", e.target.value)}
+                    placeholder="Country of residence"
+                  />
+                </div>
+              </div>
+              <div className="col-md-6">
                 <label className="form-label">Fee category</label>
                 <select
                   className="form-select"
@@ -142,6 +164,110 @@ export default function RegisterPage() {
                     </option>
                   ))}
                 </select>
+              </div>
+              <div className="col-md-3">
+                <label className="form-label">Age category</label>
+                <select
+                  className="form-select"
+                  value={form.age_category}
+                  onChange={(e) => update("age_category", e.target.value)}
+                >
+                  <option value="">—</option>
+                  {AGE_CATEGORIES.map((a) => (
+                    <option key={a} value={a}>
+                      {a}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="col-md-3">
+                <label className="form-label">Gender</label>
+                <select
+                  className="form-select"
+                  value={form.gender}
+                  onChange={(e) => update("gender", e.target.value)}
+                >
+                  <option value="">—</option>
+                  {GENDERS.map((g) => (
+                    <option key={g} value={g}>
+                      {g}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="col-md-6">
+                <label className="form-label">Phone number</label>
+                <div className="input-icon">
+                  <i className="bi bi-telephone" />
+                  <input
+                    className="form-control"
+                    value={form.phone}
+                    onChange={(e) => update("phone", e.target.value)}
+                    placeholder="Optional"
+                  />
+                </div>
+              </div>
+              <div className="col-md-6">
+                <label className="form-label">Email address</label>
+                <div className="input-icon">
+                  <i className="bi bi-envelope" />
+                  <input
+                    type="email"
+                    className="form-control"
+                    value={form.email}
+                    onChange={(e) => update("email", e.target.value)}
+                    placeholder="Optional"
+                  />
+                </div>
+              </div>
+              <div className="col-md-6">
+                <label className="form-label">Tour company</label>
+                <div className="input-icon">
+                  <i className="bi bi-building" />
+                  <input
+                    className="form-control"
+                    value={form.tour_company}
+                    onChange={(e) => update("tour_company", e.target.value)}
+                    placeholder="Tour operator (if any)"
+                  />
+                </div>
+              </div>
+              <div className="col-md-6">
+                <label className="form-label">Vehicle registration</label>
+                <div className="input-icon">
+                  <i className="bi bi-car-front" />
+                  <input
+                    className="form-control"
+                    value={form.vehicle_registration}
+                    onChange={(e) => update("vehicle_registration", e.target.value)}
+                    placeholder="e.g. UAS 123A"
+                  />
+                </div>
+              </div>
+              <div className="col-md-6">
+                <label className="form-label">Number of visitors</label>
+                <div className="input-icon">
+                  <i className="bi bi-people" />
+                  <input
+                    type="number"
+                    min="1"
+                    className="form-control"
+                    value={form.num_visitors}
+                    onChange={(e) => update("num_visitors", e.target.value)}
+                  />
+                </div>
+              </div>
+              <div className="col-md-6">
+                <label className="form-label">Guide name</label>
+                <div className="input-icon">
+                  <i className="bi bi-person-badge" />
+                  <input
+                    className="form-control"
+                    value={form.guide_name}
+                    onChange={(e) => update("guide_name", e.target.value)}
+                    placeholder="Optional"
+                  />
+                </div>
               </div>
             </div>
 

@@ -50,6 +50,14 @@ export const NAV_ITEMS = [
     roles: ["activity_officer", "management"],
   },
   {
+    to: "/reports",
+    label: "Reports",
+    icon: "bi-file-earmark-bar-graph",
+    title: "Reports",
+    subtitle: "Periodic summaries of visitors, entries, activities, and revenue",
+    roles: ["management"],
+  },
+  {
     to: "/sync",
     label: "Sync",
     icon: "bi-arrow-repeat",

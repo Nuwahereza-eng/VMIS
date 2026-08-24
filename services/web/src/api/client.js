@@ -75,3 +75,26 @@ export async function getVisitors(token, { search = "", category = "", limit = 5
   const res = await fetch(`/visitors?${params.toString()}`, { headers: authHeaders(token) });
   return parse(res);
 }
+
+// Management-only periodic report (visitors, entries, activities, revenue).
+export async function getReport(token, { granularity = "monthly", start = "", end = "" } = {}) {
+  const params = new URLSearchParams({ granularity });
+  if (start) params.set("start", start);
+  if (end) params.set("end", end);
+  const res = await fetch(`/management/reports?${params.toString()}`, {
+    headers: authHeaders(token),
+  });
+  return parse(res);
+}
+
+// Download the same report as CSV. Returns a Blob for the browser to save.
+export async function downloadReportCsv(token, { granularity = "monthly", start = "", end = "" } = {}) {
+  const params = new URLSearchParams({ granularity });
+  if (start) params.set("start", start);
+  if (end) params.set("end", end);
+  const res = await fetch(`/management/reports.csv?${params.toString()}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new ApiError(res.status, res.statusText);
+  return res.blob();
+}

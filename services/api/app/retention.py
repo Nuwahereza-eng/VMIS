@@ -53,6 +53,14 @@ def enforce_retention(
         visitor.full_name = REDACTED
         visitor.id_number = REDACTED
         visitor.nationality = None
+        visitor.country = None
+        visitor.age_category = None
+        visitor.gender = None
+        visitor.phone = None
+        visitor.email = None
+        visitor.tour_company = None
+        visitor.vehicle_registration = None
+        visitor.guide_name = None
         visitor.pii_redacted = True
         redacted += 1
         record_audit(
