@@ -4,7 +4,7 @@ import { useApp } from "../context/AppContext.jsx";
 import { getVisitors } from "../api/client.js";
 import { CATEGORIES } from "../domain/categories.js";
 import PageHeader from "../components/PageHeader.jsx";
-import VisitorProfileModal from "../components/VisitorProfileModal.jsx";
+import VisitorProfilePage from "./VisitorProfilePage.jsx";
 
 const PAGE_SIZE = 25;
 
@@ -62,6 +62,10 @@ export default function VisitorsPage() {
   const totalPages = Math.max(1, Math.ceil(data.total / PAGE_SIZE));
   const showingFrom = data.total === 0 ? 0 : page * PAGE_SIZE + 1;
   const showingTo = Math.min(data.total, (page + 1) * PAGE_SIZE);
+
+  if (selected) {
+    return <VisitorProfilePage visitor={selected} onBack={() => setSelected(null)} />;
+  }
 
   return (
     <>
@@ -198,10 +202,6 @@ export default function VisitorsPage() {
           </>
         )}
       </div>
-
-      {selected && (
-        <VisitorProfileModal visitor={selected} onClose={() => setSelected(null)} />
-      )}
     </>
   );
 }
