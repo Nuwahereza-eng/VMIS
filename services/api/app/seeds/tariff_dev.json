@@ -1,54 +1,60 @@
 {
-  "_warning": "DEVELOPMENT FIXTURE ONLY. These figures are PLACEHOLDERS, not the real UWA tariff. Per build prompt section 4.3, the actual current Uganda Wildlife Authority rates must be confirmed with UWA and loaded before any use beyond development. Do NOT deploy these numbers to production.",
-  "_amounts": "amount_minor is integer minor units: USD in cents (exponent 2), UGX in shillings (exponent 0). Categories FNR/FR/ROA are USD; EAC is UGX.",
+  "_source": "Tourism activity fee schedule by visitor category (project brief, Table 1). These are the rates stated in the brief; confirm against the current official Uganda Wildlife Authority tariff before production use (build prompt section 4.3).",
+  "_amounts": "amount_minor is integer minor units: USD in cents (exponent 2), UGX in shillings (exponent 0). Categories FNR/FR/ROA are USD; EAC is UGX. Activities marked 'N/A' for a category omit that category's rate (not offered to it).",
   "activities": [
     {
       "code": "park_entrance",
       "name": "Park Entrance",
       "is_free": false,
-      "rates": { "FNR": 4500000, "FR": 3500000, "ROA": 3000000, "EAC": 20000 }
+      "rates": { "FNR": 4500, "FR": 3500, "ROA": 3500, "EAC": 25000 }
     },
     {
       "code": "day_game_drive",
       "name": "Day Game Drive",
       "is_free": false,
-      "rates": { "FNR": 3000000, "FR": 2500000, "ROA": 2000000, "EAC": 15000 }
+      "rates": { "FNR": 3000, "FR": 2500, "ROA": 2500, "EAC": 30000 }
     },
     {
       "code": "night_game_drive",
       "name": "Night Game Drive",
       "is_free": false,
-      "rates": { "FNR": 4000000, "FR": 3500000, "ROA": 3000000, "EAC": 25000 }
+      "rates": { "FNR": 4000, "FR": 3500, "ROA": 3500, "EAC": 40000 }
     },
     {
       "code": "self_drive",
-      "name": "Self-Drive",
+      "name": "Self Game Drive",
       "is_free": false,
-      "rates": { "FNR": 2000000, "FR": 1500000, "ROA": 1000000, "EAC": 10000 }
+      "rates": { "FNR": 5000, "FR": 5000, "ROA": 5000, "EAC": 50000 }
     },
     {
       "code": "launch_trip",
       "name": "Launch Trip",
       "is_free": false,
-      "rates": { "FNR": 3000000, "FR": 3000000, "ROA": 2500000, "EAC": 30000 }
+      "rates": { "FNR": 3000, "FR": 2500, "ROA": 2500, "EAC": 30000 }
     },
     {
       "code": "falls_hiking_viewing",
-      "name": "Hiking / Viewing at the Falls",
+      "name": "Hiking Top of Falls",
       "is_free": false,
-      "rates": { "FNR": 1500000, "FR": 1500000, "ROA": 1000000, "EAC": 15000 }
+      "rates": { "FNR": 1500, "FR": 1000, "ROA": 1000, "EAC": 20000 }
+    },
+    {
+      "code": "falls_viewing",
+      "name": "Viewing Top of Falls",
+      "is_free": false,
+      "rates": { "FNR": 1000, "FR": 1000, "ROA": 1000, "EAC": 20000 }
     },
     {
       "code": "university_viewing",
       "name": "University Viewing",
       "is_free": false,
-      "rates": { "FNR": 500000, "FR": 500000, "ROA": 300000, "EAC": 10000 }
+      "rates": { "EAC": 10000 }
     },
     {
       "code": "secondary_viewing",
-      "name": "Secondary School Viewing",
+      "name": "Secondary Viewing",
       "is_free": false,
-      "rates": { "FNR": 300000, "FR": 300000, "ROA": 200000, "EAC": 5000 }
+      "rates": { "EAC": 4000 }
     },
     {
       "code": "wildlife_clubs",
@@ -60,19 +66,19 @@
       "code": "sport_fishing",
       "name": "Sport Fishing",
       "is_free": false,
-      "rates": { "FNR": 15000000, "FR": 15000000, "ROA": 10000000, "EAC": 100000 }
+      "rates": { "FNR": 5000, "FR": 5000, "ROA": 5000, "EAC": 50000 }
     },
     {
       "code": "bird_watching",
       "name": "Bird Watching",
       "is_free": false,
-      "rates": { "FNR": 3000000, "FR": 3000000, "ROA": 2000000, "EAC": 30000 }
+      "rates": { "FNR": 2500, "FR": 2000, "ROA": 2000, "EAC": 20000 }
     },
     {
       "code": "cycling",
       "name": "Cycling",
       "is_free": false,
-      "rates": { "FNR": 3000000, "FR": 2500000, "ROA": 2000000, "EAC": 20000 }
+      "rates": { "FNR": 3000, "FR": 2500, "ROA": 2500, "EAC": 30000 }
     }
   ]
 }
