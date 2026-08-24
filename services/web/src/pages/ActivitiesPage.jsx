@@ -49,6 +49,7 @@ export default function ActivitiesPage() {
   const [validity, setValidity] = useState(null);
   const [method, setMethod] = useState("Cash");
   const [note, setNote] = useState(null);
+  const [busy, setBusy] = useState(false);
 
   // Load visitors + the cached fee catalogue (refresh from server when online).
   useEffect(() => {
@@ -138,16 +139,24 @@ export default function ActivitiesPage() {
       setNote({ type: "danger", text: "Select at least one activity." });
       return;
     }
-    for (const id of selectedIds) {
-      await captureActivity(visitorId, id, 1, visitor.category, session.stationId);
+    setBusy(true);
+    try {
+      for (const id of selectedIds) {
+        await captureActivity(visitorId, id, 1, visitor.category, session.stationId);
+      }
+      await refreshOutbox();
+      setPreviousActs(await activitiesForVisitor(visitorId));
+      const count = selectedIds.length;
+      setSelected({});
+      setNote({
+        type: "success",
+        text: `Saved ${count} activit${count === 1 ? "y" : "ies"} · ${method}.`,
+      });
+    } catch {
+      setNote({ type: "danger", text: "Could not save. Please try again." });
+    } finally {
+      setBusy(false);
     }
-    await refreshOutbox();
-    setPreviousActs(await activitiesForVisitor(visitorId));
-    setSelected({});
-    setNote({
-      type: "success",
-      text: `Saved ${selectedIds.length} activit${selectedIds.length === 1 ? "y" : "ies"} · ${method}.`,
-    });
   }
 
   return (
@@ -285,8 +294,9 @@ export default function ActivitiesPage() {
                 ))}
               </select>
 
-              <button className="btn btn-success w-100 mt-3" onClick={onConfirm}>
-                <i className="bi bi-check2-circle" /> Confirm &amp; Save
+              <button className={"btn btn-success w-100 mt-3" + (busy ? " is-busy" : "")} onClick={onConfirm} disabled={busy}>
+                <i className={"bi " + (busy ? "bi-arrow-repeat spin" : "bi-check2-circle")} />{" "}
+                {busy ? "Saving…" : "Confirm & Save"}
               </button>
             </div>
           </div>

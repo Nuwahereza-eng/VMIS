@@ -503,9 +503,16 @@ code {
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  transition: transform 0.05s ease, box-shadow 0.15s ease, background 0.15s ease;
+  transition: transform 0.06s ease, box-shadow 0.15s ease, background 0.15s ease, filter 0.15s ease;
 }
-.btn:active { transform: translateY(1px); }
+.btn:active { transform: translateY(1px) scale(0.98); filter: brightness(0.94); }
+.btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px var(--vmis-green-100, rgba(28, 128, 78, 0.28));
+}
+/* Buttons doing async work: dim slightly and show a wait cursor. */
+.btn:disabled { cursor: not-allowed; }
+.btn.is-busy { pointer-events: none; opacity: 0.85; }
 
 .btn-success, .btn-primary {
   background: linear-gradient(180deg, var(--vmis-green-600), var(--vmis-green-800));

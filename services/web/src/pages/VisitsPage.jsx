@@ -16,6 +16,8 @@ export default function VisitsPage() {
   const [open, setOpen] = useState([]);
   const [form, setForm] = useState({ visitor_id: "", ticket_number: "", nights_purchased: 1 });
   const [error, setError] = useState(null);
+  const [entering, setEntering] = useState(false);
+  const [exitingId, setExitingId] = useState(null);
 
   async function refresh() {
     setVisitors(await allVisitors());
@@ -33,23 +35,35 @@ export default function VisitsPage() {
       setError("Choose a visitor.");
       return;
     }
-    await recordEntry(
-      {
-        visitor_id: form.visitor_id,
-        ticket_number: form.ticket_number,
-        nights_purchased: Number(form.nights_purchased),
-      },
-      session.stationId,
-    );
-    await refreshOutbox();
-    setForm({ visitor_id: "", ticket_number: "", nights_purchased: 1 });
-    await refresh();
+    setEntering(true);
+    try {
+      await recordEntry(
+        {
+          visitor_id: form.visitor_id,
+          ticket_number: form.ticket_number,
+          nights_purchased: Number(form.nights_purchased),
+        },
+        session.stationId,
+      );
+      await refreshOutbox();
+      setForm({ visitor_id: "", ticket_number: "", nights_purchased: 1 });
+      await refresh();
+    } catch {
+      setError("Could not record the entry. Please try again.");
+    } finally {
+      setEntering(false);
+    }
   }
 
   async function onExit(visitId) {
-    await recordExit(visitId, {}, session.stationId);
-    await refreshOutbox();
-    await refresh();
+    setExitingId(visitId);
+    try {
+      await recordExit(visitId, {}, session.stationId);
+      await refreshOutbox();
+      await refresh();
+    } finally {
+      setExitingId(null);
+    }
   }
 
   const nameFor = (id) => visitors.find((v) => v.id === id)?.full_name || id;
@@ -117,8 +131,9 @@ export default function VisitsPage() {
                 Ticket expiry is entry time plus nights × 24 hours.
               </div>
             </div>
-            <button className="btn btn-success">
-              <i className="bi bi-check2-circle" /> Record entry
+            <button className={"btn btn-success" + (entering ? " is-busy" : "")} disabled={entering}>
+              <i className={"bi " + (entering ? "bi-arrow-repeat spin" : "bi-check2-circle")} />{" "}
+              {entering ? "Recording…" : "Record entry"}
             </button>
           </form>
         </div>
@@ -165,10 +180,12 @@ export default function VisitsPage() {
                           {t.status}
                         </span>
                         <button
-                          className="btn btn-outline-danger btn-sm"
+                          className={"btn btn-outline-danger btn-sm" + (exitingId === v.id ? " is-busy" : "")}
                           onClick={() => onExit(v.id)}
+                          disabled={exitingId === v.id}
                         >
-                          <i className="bi bi-box-arrow-right" /> Exit
+                          <i className={"bi " + (exitingId === v.id ? "bi-arrow-repeat spin" : "bi-box-arrow-right")} />{" "}
+                          {exitingId === v.id ? "Exiting…" : "Exit"}
                         </button>
                       </div>
                     </div>

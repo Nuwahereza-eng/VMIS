@@ -43,6 +43,7 @@ export default function RegisterPage() {
   const [duplicates, setDuplicates] = useState([]);
   const [saved, setSaved] = useState(null);
   const [error, setError] = useState(null);
+  const [busy, setBusy] = useState(false);
 
   const code = useMemo(() => visitorCode(form.id), [form.id]);
 
@@ -66,50 +67,57 @@ export default function RegisterPage() {
       return;
     }
 
-    const visitor = await registerVisitor(
-      {
-        id: form.id,
-        full_name: form.full_name,
-        id_number: form.id_number,
-        nationality: form.nationality,
-        category: form.category,
-        country: form.nationality,
-        phone: form.phone,
-        email: form.email,
-        tour_company: form.tour_company,
-        vehicle_registration: form.vehicle_registration,
-        privacy_notice_accepted: true,
-      },
-      session.stationId,
-    );
-
-    // The mockup registers and admits in one step, so also open the visit.
-    const entryTs = form.entry_datetime
-      ? new Date(form.entry_datetime).toISOString()
-      : new Date().toISOString();
-    await recordEntry(
-      {
-        visitor_id: visitor.id,
-        entry_gate: form.entry_gate,
-        entry_timestamp: entryTs,
-        ticket_number: code,
-        nights_purchased: Number(form.nights_purchased) || 1,
-      },
-      session.stationId,
-    );
-
-    if (form.accommodation) {
-      await recordAccommodation(
-        visitor.id,
-        form.accommodation,
-        Number(form.nights_purchased) || 1,
+    setBusy(true);
+    try {
+      const visitor = await registerVisitor(
+        {
+          id: form.id,
+          full_name: form.full_name,
+          id_number: form.id_number,
+          nationality: form.nationality,
+          category: form.category,
+          country: form.nationality,
+          phone: form.phone,
+          email: form.email,
+          tour_company: form.tour_company,
+          vehicle_registration: form.vehicle_registration,
+          privacy_notice_accepted: true,
+        },
+        session.stationId,
       );
-    }
 
-    await refreshOutbox();
-    setSaved({ ...visitor, code });
-    setDuplicates([]);
-    setForm(emptyForm());
+      // The mockup registers and admits in one step, so also open the visit.
+      const entryTs = form.entry_datetime
+        ? new Date(form.entry_datetime).toISOString()
+        : new Date().toISOString();
+      await recordEntry(
+        {
+          visitor_id: visitor.id,
+          entry_gate: form.entry_gate,
+          entry_timestamp: entryTs,
+          ticket_number: code,
+          nights_purchased: Number(form.nights_purchased) || 1,
+        },
+        session.stationId,
+      );
+
+      if (form.accommodation) {
+        await recordAccommodation(
+          visitor.id,
+          form.accommodation,
+          Number(form.nights_purchased) || 1,
+        );
+      }
+
+      await refreshOutbox();
+      setSaved({ ...visitor, code });
+      setDuplicates([]);
+      setForm(emptyForm());
+    } catch {
+      setError("Could not complete the registration. Please try again.");
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -318,8 +326,9 @@ export default function RegisterPage() {
             <VisitorQrCode value={form.id} size={168} />
             <div className="reg__preview-idlabel">Visitor ID</div>
             <div className="reg__preview-code">{code}</div>
-            <button type="submit" className="btn btn-success w-100 mt-3">
-              <i className="bi bi-qr-code" /> Generate QR &amp; Register
+            <button type="submit" className={"btn btn-success w-100 mt-3" + (busy ? " is-busy" : "")} disabled={busy}>
+              <i className={"bi " + (busy ? "bi-arrow-repeat spin" : "bi-qr-code")} />{" "}
+              {busy ? "Registering…" : "Generate QR & Register"}
             </button>
           </div>
         </form>

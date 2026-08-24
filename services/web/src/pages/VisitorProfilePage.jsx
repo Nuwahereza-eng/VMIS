@@ -76,6 +76,7 @@ export default function VisitorProfilePage({ visitor, onBack, onScanQr }) {
   const [catalogue, setCatalogue] = useState([]);
   const [validity, setValidity] = useState(null);
   const [exited, setExited] = useState(false);
+  const [exiting, setExiting] = useState(false);
 
   const currency = CATEGORY_CURRENCY[visitor.category] || "USD";
 
@@ -162,9 +163,14 @@ export default function VisitorProfilePage({ visitor, onBack, onScanQr }) {
 
   async function onRecordExit() {
     if (!openVisit) return;
-    await recordExit(openVisit.id, {}, session.stationId);
-    setExited(true);
-    setOpenVisit(null);
+    setExiting(true);
+    try {
+      await recordExit(openVisit.id, {}, session.stationId);
+      setExited(true);
+      setOpenVisit(null);
+    } finally {
+      setExiting(false);
+    }
   }
 
   return (
@@ -456,11 +462,12 @@ export default function VisitorProfilePage({ visitor, onBack, onScanQr }) {
             <i className="bi bi-pencil-square" /> Update Visitor
           </button>
           <button
-            className="btn vp__exit flex-grow-1"
+            className={"btn vp__exit flex-grow-1" + (exiting ? " is-busy" : "")}
             onClick={onRecordExit}
-            disabled={!openVisit}
+            disabled={!openVisit || exiting}
           >
-            <i className="bi bi-box-arrow-right" /> Record Exit
+            <i className={"bi " + (exiting ? "bi-arrow-repeat spin" : "bi-box-arrow-right")} />{" "}
+            {exiting ? "Recording…" : "Record Exit"}
           </button>
         </div>
       </div>

@@ -16,6 +16,7 @@ export default function AccommodationPage() {
   const [rows, setRows] = useState([]);
   const [form, setForm] = useState({ visitor_id: "", facility: LODGES[0], nights: 1 });
   const [note, setNote] = useState(null);
+  const [busy, setBusy] = useState(false);
 
   async function refresh() {
     setVisitors(await allVisitors());
@@ -43,11 +44,18 @@ export default function AccommodationPage() {
       setNote({ type: "danger", text: "Choose a visitor." });
       return;
     }
-    await recordAccommodation(form.visitor_id, form.facility, Number(form.nights) || 1);
-    await refreshOutbox();
-    await refresh();
-    setForm({ visitor_id: "", facility: LODGES[0], nights: 1 });
-    setNote({ type: "success", text: "Accommodation recorded and queued for sync." });
+    setBusy(true);
+    try {
+      await recordAccommodation(form.visitor_id, form.facility, Number(form.nights) || 1);
+      await refreshOutbox();
+      await refresh();
+      setForm({ visitor_id: "", facility: LODGES[0], nights: 1 });
+      setNote({ type: "success", text: "Accommodation recorded and queued for sync." });
+    } catch {
+      setNote({ type: "danger", text: "Could not record accommodation. Please try again." });
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -110,8 +118,9 @@ export default function AccommodationPage() {
                 />
               </div>
             </div>
-            <button className="btn btn-success">
-              <i className="bi bi-check2-circle" /> Record accommodation
+            <button className={"btn btn-success" + (busy ? " is-busy" : "")} disabled={busy}>
+              <i className={"bi " + (busy ? "bi-arrow-repeat spin" : "bi-check2-circle")} />{" "}
+              {busy ? "Recording…" : "Record accommodation"}
             </button>
           </form>
         </div>

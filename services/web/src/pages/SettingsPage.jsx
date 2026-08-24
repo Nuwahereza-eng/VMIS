@@ -24,6 +24,7 @@ export default function SettingsPage() {
   const [currency, setCurrency] = useState("UGX");
   const [rate, setRate] = useState("");
   const [note, setNote] = useState(null);
+  const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -35,8 +36,15 @@ export default function SettingsPage() {
 
   async function saveReporting(e) {
     e.preventDefault();
-    await setReportPrefs({ currency, usdToUgx: Number(rate) });
-    setNote({ type: "success", text: "Reporting preferences saved." });
+    setSaving(true);
+    try {
+      await setReportPrefs({ currency, usdToUgx: Number(rate) });
+      setNote({ type: "success", text: "Reporting preferences saved." });
+    } catch {
+      setNote({ type: "danger", text: "Could not save preferences. Please try again." });
+    } finally {
+      setSaving(false);
+    }
   }
 
   const displayName = session?.name || session?.username || "—";
@@ -132,8 +140,9 @@ export default function SettingsPage() {
                 />
               </div>
             </div>
-            <button className="btn btn-success mt-3">
-              <i className="bi bi-check2-circle" /> Save preferences
+            <button className={"btn btn-success mt-3" + (saving ? " is-busy" : "")} disabled={saving}>
+              <i className={"bi " + (saving ? "bi-arrow-repeat spin" : "bi-check2-circle")} />{" "}
+              {saving ? "Saving…" : "Save preferences"}
             </button>
           </form>
         </div>
