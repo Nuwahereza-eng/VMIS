@@ -4,6 +4,7 @@ import { useApp } from "../context/AppContext.jsx";
 import { getVisitors } from "../api/client.js";
 import { CATEGORIES } from "../domain/categories.js";
 import PageHeader from "../components/PageHeader.jsx";
+import VisitorProfileModal from "../components/VisitorProfileModal.jsx";
 
 const PAGE_SIZE = 25;
 
@@ -26,6 +27,7 @@ export default function VisitorsPage() {
   const [data, setData] = useState({ total: 0, items: [] });
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [selected, setSelected] = useState(null);
 
   const load = useCallback(async () => {
     setError(null);
@@ -137,11 +139,17 @@ export default function VisitorsPage() {
                     <th>Nationality</th>
                     <th>Visits</th>
                     <th>Status</th>
+                    <th></th>
                   </tr>
                 </thead>
                 <tbody>
                   {data.items.map((v) => (
-                    <tr key={v.id}>
+                    <tr
+                      key={v.id}
+                      className="row-clickable"
+                      onClick={() => setSelected(v)}
+                      title="View profile"
+                    >
                       <td>
                         <div className="data-row__avatar d-inline-flex me-2">{initials(v.full_name)}</div>
                         {v.full_name}
@@ -156,6 +164,9 @@ export default function VisitorsPage() {
                         ) : (
                           <span className="pill neutral">Not inside</span>
                         )}
+                      </td>
+                      <td className="text-end">
+                        <i className="bi bi-chevron-right muted" />
                       </td>
                     </tr>
                   ))}
@@ -187,6 +198,10 @@ export default function VisitorsPage() {
           </>
         )}
       </div>
+
+      {selected && (
+        <VisitorProfileModal visitor={selected} onClose={() => setSelected(null)} />
+      )}
     </>
   );
 }

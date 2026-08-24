@@ -833,4 +833,60 @@ table.table { --bs-table-border-color: var(--vmis-line); }
   text-align: center;
 }
 
+/* ---------- Clickable rows + profile modal ---------- */
+
+.row-clickable {
+  cursor: pointer;
+  transition: background 0.12s ease;
+}
+
+.row-clickable:hover {
+  background: var(--vmis-green-50);
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1050;
+  background: rgba(16, 35, 29, 0.45);
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 5vh 1rem;
+  overflow-y: auto;
+  animation: fadeIn 0.18s ease both;
+}
+
+.modal-panel {
+  position: relative;
+  width: 100%;
+  max-width: 640px;
+  padding: 0;
+  overflow: hidden;
+  box-shadow: var(--vmis-shadow-lg);
+}
+
+.modal-panel__close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 1;
+  border: none;
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--vmis-body);
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.12s ease, color 0.12s ease;
+}
+
+.modal-panel__close:hover {
+  background: var(--vmis-green-100);
+  color: var(--vmis-green-800);
+}
+
 
