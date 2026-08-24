@@ -32,13 +32,21 @@ def needs_rehash(password_hash: str) -> bool:
     return _ph.check_needs_rehash(password_hash)
 
 
-def create_access_token(subject: str, role: str, station_id: str | None) -> str:
+def create_access_token(
+    subject: str,
+    role: str,
+    station_id: str | None,
+    username: str | None = None,
+    name: str | None = None,
+) -> str:
     settings = get_settings()
     now = utcnow()
     payload = {
         "sub": subject,
         "role": role,
         "station_id": station_id,
+        "username": username,
+        "name": name,
         "iat": int(now.timestamp()),
         "exp": int((now + timedelta(minutes=settings.access_token_ttl_minutes)).timestamp()),
     }

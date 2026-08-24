@@ -319,6 +319,34 @@ code {
   font-weight: 700;
   font-size: 0.9rem;
 }
+.avatar--lg {
+  width: 64px;
+  height: 64px;
+  border-radius: 18px;
+  font-size: 1.5rem;
+  flex: 0 0 64px;
+}
+
+/* Profile header on the Settings screen. */
+.profile-head {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 0.75rem;
+}
+.profile-head__name {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--vmis-ink);
+  line-height: 1.15;
+}
+.profile-head__role {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 0.3rem;
+  font-size: 0.85rem;
+}
 
 /* ---------- Page header ---------- */
 

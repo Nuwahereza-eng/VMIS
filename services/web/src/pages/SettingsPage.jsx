@@ -11,6 +11,13 @@ const ROLE_LABELS = {
   activity_officer: "Activity officer",
 };
 
+function initials(text = "") {
+  const parts = text.trim().split(/[\s._-]+/).filter(Boolean);
+  if (parts.length === 0) return "U";
+  if (parts.length === 1) return parts[0].slice(0, 2).toUpperCase();
+  return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+}
+
 export default function SettingsPage() {
   const { session, online, outbox } = useApp();
 
@@ -32,10 +39,11 @@ export default function SettingsPage() {
     setNote({ type: "success", text: "Reporting preferences saved." });
   }
 
+  const displayName = session?.name || session?.username || "—";
   const rows = [
-    { label: "Signed in as", value: session?.username || "—" },
+    { label: "Username", value: session?.username || "—" },
     { label: "Role", value: ROLE_LABELS[session?.role] || session?.role || "—" },
-    { label: "Station", value: session?.stationId || "—" },
+    { label: "Station", value: session?.stationId || "Not assigned" },
     { label: "Working mode", value: online ? "Online" : "Offline" },
     { label: "Pending sync operations", value: String(outbox ?? 0) },
     {
@@ -61,10 +69,20 @@ export default function SettingsPage() {
         <div className="col-lg-7">
           <div className="surface-card p-4 mb-4">
             <div className="card-title-row">
-              <i className="bi bi-sliders" />
-              <h2>Session &amp; station</h2>
+              <i className="bi bi-person-circle" />
+              <h2>Profile</h2>
             </div>
-            <dl className="row mb-0" style={{ fontSize: "0.92rem" }}>
+            <div className="profile-head">
+              <div className="avatar avatar--lg">{initials(displayName)}</div>
+              <div>
+                <div className="profile-head__name">{displayName}</div>
+                <div className="profile-head__role">
+                  <span className="pill green">{ROLE_LABELS[session?.role] || session?.role}</span>
+                  {session?.stationId && <span className="muted">· {session.stationId}</span>}
+                </div>
+              </div>
+            </div>
+            <dl className="row mb-0 mt-2" style={{ fontSize: "0.92rem" }}>
               {rows.map((r) => (
                 <div className="col-12 d-flex justify-content-between data-row" key={r.label}>
                   <dt className="small-caps muted fw-normal">{r.label}</dt>

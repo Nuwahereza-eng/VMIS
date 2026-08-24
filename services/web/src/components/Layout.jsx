@@ -137,10 +137,10 @@ export default function Layout({ children }) {
           )}
 
           <div className="user-chip">
-            <div className="avatar">{initials(session?.username)}</div>
+            <div className="avatar">{initials(session?.name || session?.username)}</div>
             <div className="d-none d-md-block lh-sm">
               <div className="fw-semibold" style={{ fontSize: "0.9rem", color: "var(--vmis-ink)" }}>
-                {session?.username}
+                {session?.name || session?.username}
               </div>
               <div className="topbar__sub">
                 {ROLE_LABELS[session?.role] || session?.role}

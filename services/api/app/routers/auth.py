@@ -36,7 +36,13 @@ def login(
 
     record_audit(db, action="login", entity_type="user", entity_id=str(user.id), actor_user_id=user.id)
 
-    token = create_access_token(subject=str(user.id), role=user.role.value, station_id=user.station_id)
+    token = create_access_token(
+        subject=str(user.id),
+        role=user.role.value,
+        station_id=user.station_id,
+        username=user.username,
+        name=user.full_name,
+    )
     return Token(access_token=token)
 
 

@@ -22,7 +22,11 @@ export async function saveSession(token) {
   const claims = decodeJwt(token) || {};
   const session = {
     token,
-    username: claims.sub || null,
+    userId: claims.sub || null,
+    // Prefer the real username/name claims; fall back to the subject (UUID)
+    // only for tokens issued before those claims existed.
+    username: claims.username || claims.sub || null,
+    name: claims.name || null,
     role: claims.role || null,
     stationId: claims.station_id || null,
     exp: claims.exp || null,
