@@ -1,4 +1,8 @@
+import { useEffect, useState } from "react";
+
 import { useApp } from "../context/AppContext.jsx";
+import { REPORT_CURRENCIES } from "../domain/categories.js";
+import { getReportPrefs, setReportPrefs } from "../settings/prefs.js";
 import PageHeader from "../components/PageHeader.jsx";
 
 const ROLE_LABELS = {
@@ -9,6 +13,24 @@ const ROLE_LABELS = {
 
 export default function SettingsPage() {
   const { session, online, outbox } = useApp();
+
+  const [currency, setCurrency] = useState("UGX");
+  const [rate, setRate] = useState("");
+  const [note, setNote] = useState(null);
+
+  useEffect(() => {
+    (async () => {
+      const prefs = await getReportPrefs();
+      setCurrency(prefs.currency);
+      setRate(String(prefs.usdToUgx));
+    })();
+  }, []);
+
+  async function saveReporting(e) {
+    e.preventDefault();
+    await setReportPrefs({ currency, usdToUgx: Number(rate) });
+    setNote({ type: "success", text: "Reporting preferences saved." });
+  }
 
   const rows = [
     { label: "Signed in as", value: session?.username || "—" },
@@ -37,7 +59,7 @@ export default function SettingsPage() {
 
       <div className="row g-4">
         <div className="col-lg-7">
-          <div className="surface-card p-4">
+          <div className="surface-card p-4 mb-4">
             <div className="card-title-row">
               <i className="bi bi-sliders" />
               <h2>Session &amp; station</h2>
@@ -53,6 +75,49 @@ export default function SettingsPage() {
               ))}
             </dl>
           </div>
+
+          <form className="surface-card p-4" onSubmit={saveReporting}>
+            <div className="card-title-row">
+              <i className="bi bi-cash-coin" />
+              <h2>Reporting currency</h2>
+            </div>
+            {note && <div className={`alert alert-${note.type}`}>{note.text}</div>}
+            <p className="muted" style={{ fontSize: "0.86rem", marginTop: "-0.25rem" }}>
+              Revenue totals are shown in one uniform currency. Amounts billed in the other
+              currency are converted at the rate below. This is display-only and never changes
+              what visitors are charged.
+            </p>
+            <div className="row g-3">
+              <div className="col-sm-6">
+                <label className="form-label">Display currency</label>
+                <select
+                  className="form-select"
+                  value={currency}
+                  onChange={(e) => setCurrency(e.target.value)}
+                >
+                  {REPORT_CURRENCIES.map((c) => (
+                    <option key={c} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="col-sm-6">
+                <label className="form-label">Exchange rate (UGX per 1 USD)</label>
+                <input
+                  type="number"
+                  min="1"
+                  step="1"
+                  className="form-control"
+                  value={rate}
+                  onChange={(e) => setRate(e.target.value)}
+                />
+              </div>
+            </div>
+            <button className="btn btn-success mt-3">
+              <i className="bi bi-check2-circle" /> Save preferences
+            </button>
+          </form>
         </div>
 
         <div className="col-lg-5">

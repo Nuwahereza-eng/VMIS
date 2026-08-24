@@ -8,16 +8,13 @@ import {
   convertMinor,
   formatMinor,
   sumMinorIn,
-  USD_TO_UGX,
 } from "../domain/categories.js";
+import { getReportPrefs, DEFAULT_REPORT_PREFS } from "../settings/prefs.js";
 import { visitorCode } from "../domain/ids.js";
 import { allActivities, allVisitors } from "../data/repository.js";
 import PageHeader from "../components/PageHeader.jsx";
 
 const CATALOGUE_KEY = "activity_catalogue";
-
-// All revenue totals are reported in this single currency.
-const REPORT_CURRENCY = "UGX";
 
 export default function PaymentsPage() {
   const { session, online } = useApp();
@@ -25,11 +22,13 @@ export default function PaymentsPage() {
   const [catalogue, setCatalogue] = useState([]);
   const [visitors, setVisitors] = useState([]);
   const [lines, setLines] = useState([]);
+  const [prefs, setPrefs] = useState(DEFAULT_REPORT_PREFS);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     (async () => {
       setLoading(true);
+      setPrefs(await getReportPrefs());
       setVisitors(await allVisitors());
       setLines(await allActivities());
       let cat = (await getMeta(CATALOGUE_KEY)) || [];
@@ -82,17 +81,18 @@ export default function PaymentsPage() {
     [lines, catalogue, visitors],
   );
 
-  // Single-currency device total: convert each captured line into UGX.
+  // Single-currency device total: convert each captured line into the
+  // configured reporting currency at the configured rate.
   const localTotal = useMemo(
     () =>
       payments.reduce(
         (total, p) =>
           p.amount && p.currency
-            ? total + convertMinor(p.amount, p.currency, REPORT_CURRENCY)
+            ? total + convertMinor(p.amount, p.currency, prefs.currency, prefs.usdToUgx)
             : total,
         0,
       ),
-    [payments],
+    [payments, prefs],
   );
 
   return (
@@ -113,7 +113,10 @@ export default function PaymentsPage() {
               <div className="stat-card__label">Revenue today (central)</div>
               <div className="stat-card__value" style={{ fontSize: "1.2rem" }}>
                 {board && board.revenue_today?.length
-                  ? formatMinor(sumMinorIn(board.revenue_today, REPORT_CURRENCY), REPORT_CURRENCY)
+                  ? formatMinor(
+                      sumMinorIn(board.revenue_today, prefs.currency, prefs.usdToUgx),
+                      prefs.currency,
+                    )
                   : "—"}
               </div>
             </div>
@@ -128,7 +131,10 @@ export default function PaymentsPage() {
               <div className="stat-card__label">Revenue to date (central)</div>
               <div className="stat-card__value" style={{ fontSize: "1.2rem" }}>
                 {board && board.revenue?.length
-                  ? formatMinor(sumMinorIn(board.revenue, REPORT_CURRENCY), REPORT_CURRENCY)
+                  ? formatMinor(
+                      sumMinorIn(board.revenue, prefs.currency, prefs.usdToUgx),
+                      prefs.currency,
+                    )
                   : "—"}
               </div>
             </div>
@@ -142,7 +148,7 @@ export default function PaymentsPage() {
             <div>
               <div className="stat-card__label">Captured on this device</div>
               <div className="stat-card__value" style={{ fontSize: "1.2rem" }}>
-                {localTotal ? formatMinor(localTotal, REPORT_CURRENCY) : "—"}
+                {localTotal ? formatMinor(localTotal, prefs.currency) : "—"}
               </div>
             </div>
           </div>
@@ -150,8 +156,8 @@ export default function PaymentsPage() {
       </div>
 
       <p className="muted mb-3" style={{ fontSize: "0.8rem" }}>
-        <i className="bi bi-info-circle" /> Totals shown in {REPORT_CURRENCY}; USD amounts
-        converted at 1 USD = {USD_TO_UGX.toLocaleString()} UGX.
+        <i className="bi bi-info-circle" /> Totals shown in {prefs.currency}; converted at 1 USD ={" "}
+        {prefs.usdToUgx.toLocaleString()} UGX. Change this in Settings.
       </p>
 
       <div className="surface-card p-4">

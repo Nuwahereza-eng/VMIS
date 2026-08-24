@@ -18,28 +18,33 @@ export const CURRENCY_MINOR_EXPONENT = { USD: 2, UGX: 0 };
 
 // Single editable reporting exchange rate. Revenue is billed in either USD
 // (foreign categories) or UGX (EAC); to show one uniform total we convert
-// everything to UGX. Update this one constant when the rate changes.
+// everything to a chosen reporting currency. This is the default rate; the
+// Settings screen can override it and persist the value locally.
 export const USD_TO_UGX = 3800;
 
+// Currencies the reporting total can be shown in.
+export const REPORT_CURRENCIES = ["UGX", "USD"];
+
 // Convert an integer minor-unit amount from one currency to another using the
-// reporting rate above. Result is rounded to whole minor units of `to`.
-export function convertMinor(amountMinor, from, to) {
+// reporting rate (UGX per 1 USD). Result is rounded to whole minor units of
+// `to`. Pass `rate` to override the default USD_TO_UGX.
+export function convertMinor(amountMinor, from, to, rate = USD_TO_UGX) {
   if (!amountMinor) return 0;
   if (from === to) return amountMinor;
   const fromExp = CURRENCY_MINOR_EXPONENT[from] ?? 2;
   const toExp = CURRENCY_MINOR_EXPONENT[to] ?? 2;
   const major = amountMinor / 10 ** fromExp;
   // Rate expressed as UGX per 1 USD; go via UGX as the pivot.
-  const ugxPerUnit = { USD: USD_TO_UGX, UGX: 1 };
+  const ugxPerUnit = { USD: rate, UGX: 1 };
   const majorUgx = major * (ugxPerUnit[from] ?? 1);
   const majorTo = to === "UGX" ? majorUgx : majorUgx / (ugxPerUnit[to] ?? 1);
   return Math.round(majorTo * 10 ** toExp);
 }
 
 // Sum a list of { amount_minor, currency } into a single target currency.
-export function sumMinorIn(rows, to) {
+export function sumMinorIn(rows, to, rate = USD_TO_UGX) {
   return (rows || []).reduce(
-    (total, r) => total + convertMinor(r.amount_minor, r.currency, to),
+    (total, r) => total + convertMinor(r.amount_minor, r.currency, to, rate),
     0,
   );
 }
