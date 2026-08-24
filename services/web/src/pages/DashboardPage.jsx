@@ -1,9 +1,11 @@
 import { useEffect, useState } from "react";
 
 import { useApp } from "../context/AppContext.jsx";
-import { getDashboard } from "../api/client.js";
+import { getDashboard, getVisitors } from "../api/client.js";
 import { formatMinor } from "../domain/categories.js";
 import PageHeader from "../components/PageHeader.jsx";
+import DonutChart from "../components/DonutChart.jsx";
+import BarChart from "../components/BarChart.jsx";
 
 const ALERT_META = {
   expiry_warning: { label: "Expiry warning", icon: "bi-alarm" },
@@ -64,6 +66,7 @@ function BreakdownCard({ icon, title, rows, emptyText }) {
 export default function DashboardPage() {
   const { session, online } = useApp();
   const [data, setData] = useState(null);
+  const [recent, setRecent] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
 
@@ -71,7 +74,12 @@ export default function DashboardPage() {
     setError(null);
     setLoading(true);
     try {
-      setData(await getDashboard(session.token));
+      const [board, registry] = await Promise.all([
+        getDashboard(session.token),
+        getVisitors(session.token, { limit: 6 }).catch(() => ({ items: [] })),
+      ]);
+      setData(board);
+      setRecent(registry.items || []);
     } catch {
       setError("Could not load the dashboard. It needs a live connection to the central system.");
     } finally {
@@ -208,12 +216,22 @@ export default function DashboardPage() {
 
           <div className="row g-3 mt-1">
             <div className="col-lg-6">
-              <BreakdownCard
-                icon="bi-door-open"
-                title="Visitors by gate"
-                rows={data.by_gate}
-                emptyText="No one is currently inside the park."
-              />
+              <div className="surface-card p-4 h-100">
+                <div className="card-title-row">
+                  <i className="bi bi-pie-chart" />
+                  <h3>Visitors by entry gate</h3>
+                </div>
+                <DonutChart data={data.by_gate} />
+              </div>
+            </div>
+            <div className="col-lg-6">
+              <div className="surface-card p-4 h-100">
+                <div className="card-title-row">
+                  <i className="bi bi-bar-chart" />
+                  <h3>Activities captured</h3>
+                </div>
+                <BarChart data={data.by_activity} />
+              </div>
             </div>
             <div className="col-lg-6">
               <BreakdownCard
@@ -225,19 +243,61 @@ export default function DashboardPage() {
             </div>
             <div className="col-lg-6">
               <BreakdownCard
-                icon="bi-binoculars"
-                title="Top activities"
-                rows={data.by_activity}
-                emptyText="No activities have been captured yet."
-              />
-            </div>
-            <div className="col-lg-6">
-              <BreakdownCard
                 icon="bi-building"
                 title="Accommodation by lodge"
                 rows={data.by_lodge}
                 emptyText="No accommodation recorded yet."
               />
+            </div>
+          </div>
+
+          <div className="row g-3 mt-1">
+            <div className="col-12">
+              <div className="surface-card p-4">
+                <div className="card-title-row">
+                  <i className="bi bi-people" />
+                  <h3>Recent visitors</h3>
+                </div>
+                {recent.length === 0 ? (
+                  <div className="empty-state">
+                    <i className="bi bi-person-x" />
+                    No visitors have synced to the central system yet.
+                  </div>
+                ) : (
+                  <div className="table-responsive">
+                    <table className="table align-middle mb-0">
+                      <thead>
+                        <tr>
+                          <th>Visitor</th>
+                          <th>Nationality</th>
+                          <th>Category</th>
+                          <th className="text-end">Visits</th>
+                          <th className="text-end">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {recent.map((v) => (
+                          <tr key={v.id}>
+                            <td className="fw-semibold" style={{ color: "var(--vmis-ink)" }}>
+                              {v.full_name}
+                            </td>
+                            <td>{v.nationality || "—"}</td>
+                            <td>
+                              <span className="pill neutral">{v.category}</span>
+                            </td>
+                            <td className="text-end">{v.visit_count}</td>
+                            <td className="text-end">
+                              <span className={"pill " + (v.is_inside ? "active" : "neutral")}>
+                                {v.is_inside ? "Inside" : "Outside"}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
 
