@@ -2,7 +2,8 @@ import { useEffect, useState } from "react";
 
 import { useApp } from "../context/AppContext.jsx";
 import { getDashboard, getVisitors } from "../api/client.js";
-import { formatMinor } from "../domain/categories.js";
+import { formatMinor, sumMinorIn } from "../domain/categories.js";
+import { getReportPrefs, DEFAULT_REPORT_PREFS } from "../settings/prefs.js";
 import PageHeader from "../components/PageHeader.jsx";
 import DonutChart from "../components/DonutChart.jsx";
 import BarChart from "../components/BarChart.jsx";
@@ -69,6 +70,11 @@ export default function DashboardPage() {
   const [recent, setRecent] = useState([]);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [prefs, setPrefs] = useState(DEFAULT_REPORT_PREFS);
+
+  useEffect(() => {
+    getReportPrefs().then(setPrefs).catch(() => {});
+  }, []);
 
   async function load() {
     setError(null);
@@ -154,7 +160,7 @@ export default function DashboardPage() {
                   <div className="stat-card__value" style={{ fontSize: "1.25rem" }}>
                     {(data.revenue_today || []).length === 0
                       ? "—"
-                      : data.revenue_today.map((r) => formatMinor(r.amount_minor, r.currency)).join(" · ")}
+                      : formatMinor(sumMinorIn(data.revenue_today, prefs.currency, prefs.usdToUgx), prefs.currency)}
                   </div>
                 </div>
               </div>
@@ -209,8 +215,11 @@ export default function DashboardPage() {
               <strong style={{ color: "var(--vmis-ink)" }}>
                 {data.revenue.length === 0
                   ? "—"
-                  : data.revenue.map((r) => formatMinor(r.amount_minor, r.currency)).join(" · ")}
+                  : formatMinor(sumMinorIn(data.revenue, prefs.currency, prefs.usdToUgx), prefs.currency)}
               </strong>
+              <span className="muted" style={{ fontSize: "0.8rem" }}>
+                {" "}· 1 USD = {prefs.usdToUgx.toLocaleString()} UGX
+              </span>
             </span>
           </div>
 
