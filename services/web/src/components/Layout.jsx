@@ -104,11 +104,6 @@ export default function Layout({ children }) {
               {online ? "All systems operational" : "Changes saved locally"}
             </div>
           </div>
-          <div className="d-flex align-items-center gap-2 mb-1">
-            <i className="bi bi-shield-lock" />
-            <span>Data Protection Act, 2019</span>
-          </div>
-          <div style={{ opacity: 0.7 }}>Offline-first · synthetic data</div>
         </div>
       </aside>
 
