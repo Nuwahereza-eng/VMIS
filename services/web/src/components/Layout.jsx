@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { NavLink, useLocation } from "react-router-dom";
 
 import { useApp } from "../context/AppContext.jsx";
+import { getAlerts } from "../api/client.js";
 import { navItemsForRole } from "../nav.js";
 
 const ROLE_LABELS = {
@@ -21,6 +22,7 @@ export default function Layout({ children }) {
   const { session, online, outbox, syncing, logout } = useApp();
   const location = useLocation();
   const [open, setOpen] = useState(false);
+  const [alertCount, setAlertCount] = useState(0);
 
   const items = navItemsForRole(session?.role);
   const current =
@@ -28,6 +30,27 @@ export default function Layout({ children }) {
 
   // Close the mobile drawer whenever the route changes.
   useEffect(() => setOpen(false), [location.pathname]);
+
+  // Keep the Alerts badge current for management while online.
+  useEffect(() => {
+    let cancelled = false;
+    const hasAlerts = items.some((i) => i.showAlerts);
+    if (!online || !session?.token || !hasAlerts) {
+      setAlertCount(0);
+      return;
+    }
+    getAlerts(session.token)
+      .then((list) => {
+        if (!cancelled) setAlertCount(Array.isArray(list) ? list.length : 0);
+      })
+      .catch(() => {
+        if (!cancelled) setAlertCount(0);
+      });
+    return () => {
+      cancelled = true;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [online, session?.token, location.pathname]);
 
   return (
     <div className="app-shell">
@@ -63,11 +86,24 @@ export default function Layout({ children }) {
               {item.showOutbox && outbox > 0 && (
                 <span className="count">{outbox}</span>
               )}
+              {item.showAlerts && alertCount > 0 && (
+                <span className="count count--alert">{alertCount}</span>
+              )}
             </NavLink>
           ))}
         </nav>
 
         <div className="sidebar__foot">
+          <div className={"working-mode " + (online ? "is-online" : "is-offline")}>
+            <div className="working-mode__label">Working mode</div>
+            <div className="working-mode__state">
+              <span className="dot" />
+              {online ? "Online" : "Offline"}
+            </div>
+            <div className="working-mode__note">
+              {online ? "All systems operational" : "Changes saved locally"}
+            </div>
+          </div>
           <div className="d-flex align-items-center gap-2 mb-1">
             <i className="bi bi-shield-lock" />
             <span>Data Protection Act, 2019</span>

@@ -176,6 +176,16 @@ export async function accommodationsForVisitor(visitorId) {
   return getAllByIndex(STORES.accommodations, "visitor_id", visitorId);
 }
 
+// Every accommodation record on this device (for the Accommodation screen).
+export async function allAccommodations() {
+  return getAll(STORES.accommodations);
+}
+
+// Every captured activity on this device (for the Payments screen).
+export async function allActivities() {
+  return getAll(STORES.activities);
+}
+
 export async function recordAccommodation(visitorId, facility, nights) {
   const id = uuid4();
   const record = {

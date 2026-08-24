@@ -9,9 +9,14 @@ import VisitorsPage from "./pages/VisitorsPage.jsx";
 import RegisterPage from "./pages/RegisterPage.jsx";
 import VerifyPage from "./pages/VerifyPage.jsx";
 import ActivitiesPage from "./pages/ActivitiesPage.jsx";
+import AccommodationPage from "./pages/AccommodationPage.jsx";
+import PaymentsPage from "./pages/PaymentsPage.jsx";
 import VisitsPage from "./pages/VisitsPage.jsx";
+import AlertsPage from "./pages/AlertsPage.jsx";
 import ReportsPage from "./pages/ReportsPage.jsx";
 import SyncPage from "./pages/SyncPage.jsx";
+import SettingsPage from "./pages/SettingsPage.jsx";
+import UsersPage from "./pages/UsersPage.jsx";
 
 export default function App() {
   const { ready, session } = useApp();
@@ -41,10 +46,15 @@ export default function App() {
         {allowed.has("/visitors") && <Route path="/visitors" element={<VisitorsPage />} />}
         {allowed.has("/register") && <Route path="/register" element={<RegisterPage />} />}
         {allowed.has("/verify") && <Route path="/verify" element={<VerifyPage />} />}
-        {allowed.has("/visits") && <Route path="/visits" element={<VisitsPage />} />}
         {allowed.has("/activities") && <Route path="/activities" element={<ActivitiesPage />} />}
+        {allowed.has("/accommodation") && <Route path="/accommodation" element={<AccommodationPage />} />}
+        {allowed.has("/payments") && <Route path="/payments" element={<PaymentsPage />} />}
+        {allowed.has("/visits") && <Route path="/visits" element={<VisitsPage />} />}
+        {allowed.has("/alerts") && <Route path="/alerts" element={<AlertsPage />} />}
         {allowed.has("/reports") && <Route path="/reports" element={<ReportsPage />} />}
         <Route path="/sync" element={<SyncPage />} />
+        {allowed.has("/settings") && <Route path="/settings" element={<SettingsPage />} />}
+        {allowed.has("/users") && <Route path="/users" element={<UsersPage />} />}
         <Route path="*" element={<Navigate to={home} replace />} />
       </Routes>
     </Layout>

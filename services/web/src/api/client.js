@@ -65,6 +65,27 @@ export async function getDashboard(token) {
   return parse(res);
 }
 
+// Management-only operational alerts (expiry warnings, overstays, etc.).
+export async function getAlerts(token) {
+  const res = await fetch("/management/alerts", { headers: authHeaders(token) });
+  return parse(res);
+}
+
+// Management-only user administration.
+export async function getUsers(token) {
+  const res = await fetch("/users", { headers: authHeaders(token) });
+  return parse(res);
+}
+
+export async function createUser(token, payload) {
+  const res = await fetch("/users", {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+  return parse(res);
+}
+
 // Management-only park-wide visitor registry (server-backed, online only).
 export async function getVisitors(token, { search = "", category = "", limit = 50, offset = 0 } = {}) {
   const params = new URLSearchParams();
