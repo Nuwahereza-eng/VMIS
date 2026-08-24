@@ -45,7 +45,7 @@ export default defineConfig({
         navigateFallback: "index.html",
         // Never cache API calls: the local store is the offline source of
         // truth, not stale HTTP responses.
-        navigateFallbackDenylist: [/^\/(auth|visitors|visits|activities|sync|management)/],
+        navigateFallbackDenylist: [/^\/(auth|users|visitors|visits|activities|accommodations|charges|sync|management)/],
       },
       devOptions: {
         enabled: false,
@@ -57,9 +57,12 @@ export default defineConfig({
     proxy: {
       // Dev convenience: forward API calls to the FastAPI backend.
       "/auth": "http://localhost:8000",
+      "/users": "http://localhost:8000",
       "/visitors": "http://localhost:8000",
       "/visits": "http://localhost:8000",
       "/activities": "http://localhost:8000",
+      "/accommodations": "http://localhost:8000",
+      "/charges": "http://localhost:8000",
       "/sync": "http://localhost:8000",
       "/management": "http://localhost:8000",
       "/health": "http://localhost:8000",
