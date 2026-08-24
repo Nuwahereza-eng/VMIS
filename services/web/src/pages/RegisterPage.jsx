@@ -5,6 +5,7 @@ import { CATEGORIES } from "../domain/categories.js";
 import { AGE_CATEGORIES, GENDERS } from "../domain/reference.js";
 import { findDuplicates, registerVisitor } from "../data/repository.js";
 import PageHeader from "../components/PageHeader.jsx";
+import VisitorQrCode from "../components/VisitorQrCode.jsx";
 
 const EMPTY = {
   full_name: "",
@@ -296,6 +297,28 @@ export default function RegisterPage() {
         </div>
 
         <div className="col-lg-5">
+          {saved && (
+            <div className="surface-card p-4 mb-3 text-center">
+              <div className="card-title-row justify-content-center">
+                <i className="bi bi-qr-code" />
+                <h3>Visitor ticket</h3>
+              </div>
+              <VisitorQrCode value={saved.id} label="Scan at the gate to verify" />
+              <div className="mt-3">
+                <div style={{ color: "var(--vmis-ink)", fontWeight: 600 }}>{saved.full_name}</div>
+                <span className="pill neutral mt-1">{saved.category}</span>
+                <div className="small-caps mt-2">Identifier</div>
+                <code style={{ fontSize: "0.82rem" }}>{saved.id}</code>
+              </div>
+              <button
+                type="button"
+                className="btn btn-ghost btn-sm mt-3"
+                onClick={() => window.print()}
+              >
+                <i className="bi bi-printer" /> Print ticket
+              </button>
+            </div>
+          )}
           <div className="note-card mb-3">
             <h3>
               <i className="bi bi-wifi-off" /> Works offline

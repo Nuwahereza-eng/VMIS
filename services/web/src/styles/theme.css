@@ -803,3 +803,34 @@ table.table { --bs-table-border-color: var(--vmis-line); }
   max-width: 100%;
 }
 
+/* ---------- QR code ---------- */
+
+.qr-code {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.qr-code__frame {
+  background: #fff;
+  border: 1px solid var(--vmis-line);
+  border-radius: var(--vmis-radius-sm);
+  padding: 10px;
+  box-shadow: var(--vmis-shadow-sm);
+}
+
+.qr-code__frame svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.qr-code__caption {
+  font-size: 0.78rem;
+  color: var(--vmis-muted);
+  letter-spacing: 0.02em;
+  text-align: center;
+}
+
+

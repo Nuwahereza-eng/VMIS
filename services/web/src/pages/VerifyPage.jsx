@@ -10,6 +10,7 @@ import {
   accommodationsForVisitor,
 } from "../data/repository.js";
 import PageHeader from "../components/PageHeader.jsx";
+import VisitorQrCode from "../components/VisitorQrCode.jsx";
 
 export default function VerifyPage() {
   const [payload, setPayload] = useState("");
@@ -211,6 +212,10 @@ export default function VerifyPage() {
                           .join(", ")
                       : "No accommodation"}
                   </span>
+                </div>
+
+                <div className="mt-4 pt-3" style={{ borderTop: "1px solid var(--vmis-line)" }}>
+                  <VisitorQrCode value={result.id} label="Visitor QR — scan to re-verify" />
                 </div>
               </div>
             </div>
