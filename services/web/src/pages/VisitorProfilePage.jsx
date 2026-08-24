@@ -276,7 +276,10 @@ export default function VisitorProfilePage({ visitor, onBack, onScanQr }) {
                   ))}
                 </ul>
               )}
-              <button className="btn btn-ghost btn-sm mt-2" onClick={() => navigate("/activities")}>
+              <button
+                className="btn btn-ghost btn-sm mt-2"
+                onClick={() => navigate("/activities", { state: { visitorId: visitor.id } })}
+              >
                 <i className="bi bi-plus-lg" /> Add Activity
               </button>
             </div>

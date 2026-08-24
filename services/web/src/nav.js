@@ -27,10 +27,10 @@ export const NAV_ITEMS = [
   },
   {
     to: "/verify",
-    label: "Verify",
+    label: "Scan QR Code",
     icon: "bi-qr-code-scan",
-    title: "Verify visitor",
-    subtitle: "Check identity and ticket validity against this device",
+    title: "Scan QR Code",
+    subtitle: "Scan a visitor's QR to open their profile and ticket status",
     roles: ["gate_officer", "management"],
   },
   {
