@@ -19,6 +19,22 @@ class Settings(BaseSettings):
     # VMIS_DATABASE_URL to a PostgreSQL DSN (the system of record).
     database_url: str = "sqlite+pysqlite:///./vmis_dev.db"
 
+    @property
+    def sqlalchemy_url(self) -> str:
+        """The database URL with a driver SQLAlchemy can load.
+
+        Managed Postgres providers (Render, Neon, Supabase, Heroku) hand out
+        standard ``postgres://`` / ``postgresql://`` URLs, which SQLAlchemy maps
+        to the psycopg2 driver. This project uses psycopg v3, so rewrite the
+        scheme to ``postgresql+psycopg://`` when no explicit driver is given.
+        """
+        url = self.database_url
+        if url.startswith("postgres://"):
+            url = "postgresql://" + url[len("postgres://") :]
+        if url.startswith("postgresql://"):
+            url = "postgresql+psycopg://" + url[len("postgresql://") :]
+        return url
+
     pii_retention_days: int = 365
     # Run PII retention enforcement automatically at application start.
     retention_enforce_on_start: bool = True

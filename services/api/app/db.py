@@ -16,11 +16,11 @@ _settings = get_settings()
 # check_same_thread is only meaningful for SQLite; it lets the TestClient share
 # a connection across threads. Ignored by other drivers.
 _connect_args = (
-    {"check_same_thread": False} if _settings.database_url.startswith("sqlite") else {}
+    {"check_same_thread": False} if _settings.sqlalchemy_url.startswith("sqlite") else {}
 )
 
 engine = create_engine(
-    _settings.database_url,
+    _settings.sqlalchemy_url,
     connect_args=_connect_args,
     future=True,
 )

@@ -1,0 +1,46 @@
+# Render blueprint for the VMIS backend (API + PostgreSQL).
+#
+# The React PWA is hosted separately on Vercel (see services/web/vercel.json).
+# One-click deploy: on Render, New → Blueprint → point at this repo. Render
+# builds the API from its Dockerfile and provisions a free Postgres database.
+#
+# After the first deploy:
+#   1. Set VMIS_BOOTSTRAP_ADMIN_PASSWORD to a strong secret (marked sync:false).
+#   2. Set VMIS_CORS_ALLOW_ORIGINS to your Vercel URL, e.g. https://vmis.vercel.app
+#   3. In Vercel, set VITE_API_BASE_URL to this service's URL (no trailing slash).
+databases:
+  - name: vmis-db
+    plan: free
+    databaseName: vmis
+    user: vmis
+
+services:
+  - type: web
+    name: vmis-api
+    runtime: docker
+    plan: free
+    rootDir: services/api
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /health
+    autoDeploy: true
+    envVars:
+      # Standard postgres:// URL from the managed database. The app rewrites the
+      # scheme to postgresql+psycopg:// automatically (see app/config.py).
+      - key: VMIS_DATABASE_URL
+        fromDatabase:
+          name: vmis-db
+          property: connectionString
+      # A strong random JWT signing key, generated once by Render.
+      - key: VMIS_SECRET_KEY
+        generateValue: true
+      - key: VMIS_ACCESS_TOKEN_TTL_MINUTES
+        value: "60"
+      - key: VMIS_BOOTSTRAP_ADMIN_USERNAME
+        value: admin
+      # Set this to a strong password in the Render dashboard after first deploy.
+      - key: VMIS_BOOTSTRAP_ADMIN_PASSWORD
+        sync: false
+      # Comma-separated allowed browser origins. Replace with your Vercel URL(s).
+      # "*" lets any origin call the API — fine for a demo, tighten for production.
+      - key: VMIS_CORS_ALLOW_ORIGINS
+        value: "*"
