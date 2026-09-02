@@ -69,15 +69,19 @@ export function AppProvider({ children }) {
     }
   }, [session, refreshOutbox]);
 
-  // Opportunistic flush when connectivity returns and there is a backlog.
+  // Opportunistic flush: run whenever we are online with a backlog — whether
+  // connectivity just returned or a new operation was just queued. Debounced a
+  // touch so a burst of writes uploads in one batch.
   useEffect(() => {
-    if (online && session && outbox > 0 && !syncing) {
+    if (!(online && session && outbox > 0 && !syncing)) return;
+    const t = setTimeout(() => {
       sync().catch(() => {
         /* stay queued; the user can retry from the Sync page */
       });
-    }
+    }, 800);
+    return () => clearTimeout(t);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [online, session]);
+  }, [online, session, outbox, syncing]);
 
   const value = useMemo(
     () => ({
