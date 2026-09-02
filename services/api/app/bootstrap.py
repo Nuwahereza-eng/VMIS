@@ -27,7 +27,7 @@ def bootstrap_admin(db: Session) -> User | None:
     admin = User(
         username=settings.bootstrap_admin_username,
         password_hash=hash_password(settings.bootstrap_admin_password),
-        full_name="Bootstrap Administrator",
+        full_name="System Administrator",
         role=Role.MANAGEMENT,
     )
     db.add(admin)
