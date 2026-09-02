@@ -1520,6 +1520,114 @@ table.table { --bs-table-border-color: var(--vmis-line); }
   letter-spacing: 0.02em;
 }
 
+/* ---------- Registration success screen ---------- */
+
+.reg__done {
+  display: flex;
+  justify-content: center;
+  padding: 1rem 0 2rem;
+}
+
+.reg__done-card {
+  width: 100%;
+  max-width: 460px;
+  padding: 2.25rem 1.75rem 2rem;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.reg__done-badge {
+  width: 76px;
+  height: 76px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: radial-gradient(circle at 30% 30%, var(--vmis-green-600), var(--vmis-green-800));
+  color: #fff;
+  font-size: 2.3rem;
+  box-shadow: 0 8px 22px rgba(15, 81, 50, 0.35);
+  animation: reg-pop 0.35s ease-out;
+}
+
+@keyframes reg-pop {
+  0% {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  60% {
+    transform: scale(1.12);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+.reg__done-title {
+  margin: 1rem 0 0.15rem;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--vmis-green-900);
+}
+
+.reg__done-name {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--vmis-text);
+}
+
+.reg__done-sub {
+  margin: 0.35rem 0 0;
+  color: var(--vmis-muted);
+  font-size: 0.92rem;
+}
+
+.reg__done-qr {
+  margin: 1.4rem 0 0.6rem;
+}
+
+.reg__done-code {
+  font-size: 1.5rem;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: var(--vmis-green-700);
+}
+
+.reg__done-facts {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 0.9rem;
+}
+
+.reg__done-fact {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  background: var(--vmis-green-50, #eaf5ef);
+  color: var(--vmis-green-800);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.reg__done-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  width: 100%;
+  margin-top: 1.6rem;
+}
+
+.reg__done-actions .btn {
+  width: 100%;
+}
+
 /* ---------- Scan QR Code screen ---------- */
 
 .scan {

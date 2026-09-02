@@ -143,9 +143,17 @@ export default function RegisterPage() {
       }
 
       await refreshOutbox();
-      setSaved({ ...visitor, code, edited: isEditing });
+      setSaved({
+        ...visitor,
+        code,
+        edited: isEditing,
+        gate: form.entry_gate,
+        nights: Number(form.nights_purchased) || 1,
+        accommodation: form.accommodation,
+      });
       setDuplicates([]);
       if (!isEditing) setForm(emptyForm());
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch {
       setError(
         isEditing
@@ -155,6 +163,15 @@ export default function RegisterPage() {
     } finally {
       setBusy(false);
     }
+  }
+
+  // Clear the confirmation and start a brand-new blank registration.
+  function registerAnother() {
+    setSaved(null);
+    setError(null);
+    setDuplicates([]);
+    setForm(emptyForm());
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   return (
@@ -167,37 +184,91 @@ export default function RegisterPage() {
       </div>
 
       <div className="reg__body">
-        {saved && (
-          <div className="alert alert-success">
-            {saved.edited ? (
-              <>
-                Updated <strong>{saved.full_name}</strong>. Changes queued for sync.
-              </>
-            ) : (
-              <>
-                Registered <strong>{saved.full_name}</strong> and admitted at{" "}
-                {form.entry_gate || "the gate"}. Visitor ID <strong>{saved.code}</strong>. Queued
-                for sync.
-              </>
-            )}
-          </div>
-        )}
-        {error && <div className="alert alert-danger">{error}</div>}
-        {duplicates.length > 0 && (
-          <div className="alert alert-warning">
-            <strong>Possible duplicate.</strong> {duplicates.length} record(s) share this ID and
-            name. Review, then submit again to register anyway.
-            <ul className="mb-0 mt-2">
-              {duplicates.map((d) => (
-                <li key={d.id}>
-                  {d.full_name} · {d.id_number}
-                </li>
-              ))}
-            </ul>
-          </div>
-        )}
+        {saved ? (
+          <div className="reg__done">
+            <div className="reg__done-card surface-card">
+              <div className="reg__done-badge">
+                <i className="bi bi-check-lg" />
+              </div>
+              <h2 className="reg__done-title">
+                {saved.edited ? "Changes saved" : "Visitor registered"}
+              </h2>
+              <p className="reg__done-name">{saved.full_name}</p>
+              <p className="reg__done-sub">
+                {saved.edited
+                  ? "The updated details are queued for sync."
+                  : "The visitor has been admitted and queued for sync."}
+              </p>
 
-        <form onSubmit={onSubmit} className="reg__grid">
+              {!saved.edited && (
+                <>
+                  <div className="reg__done-qr">
+                    <VisitorQrCode value={saved.id} size={188} />
+                  </div>
+                  <div className="reg__done-code">{saved.code}</div>
+                  <div className="reg__done-facts">
+                    <span className="reg__done-fact">
+                      <i className="bi bi-door-open" /> {saved.gate}
+                    </span>
+                    <span className="reg__done-fact">
+                      <i className="bi bi-moon-stars" /> {saved.nights} Night
+                      {saved.nights === 1 ? "" : "s"}
+                    </span>
+                    {saved.accommodation && (
+                      <span className="reg__done-fact">
+                        <i className="bi bi-house-door" /> {saved.accommodation}
+                      </span>
+                    )}
+                  </div>
+                </>
+              )}
+
+              <div className="reg__done-actions">
+                {saved.edited ? (
+                  <button className="btn btn-success" onClick={() => navigate(-1)}>
+                    <i className="bi bi-arrow-left" /> Back to profile
+                  </button>
+                ) : (
+                  <>
+                    <button className="btn btn-success" onClick={registerAnother}>
+                      <i className="bi bi-person-plus" /> Register another visitor
+                    </button>
+                    <button
+                      className="btn btn-outline-success"
+                      onClick={() =>
+                        navigate("/visitors", {
+                          state: { search: saved.full_name, openVisitorId: saved.id },
+                        })
+                      }
+                    >
+                      <i className="bi bi-person-badge" /> View profile
+                    </button>
+                  </>
+                )}
+                <button className="btn btn-light" onClick={() => navigate("/")}>
+                  <i className="bi bi-grid" /> Dashboard
+                </button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <>
+            {error && <div className="alert alert-danger">{error}</div>}
+            {duplicates.length > 0 && (
+              <div className="alert alert-warning">
+                <strong>Possible duplicate.</strong> {duplicates.length} record(s) share this ID and
+                name. Review, then submit again to register anyway.
+                <ul className="mb-0 mt-2">
+                  {duplicates.map((d) => (
+                    <li key={d.id}>
+                      {d.full_name} · {d.id_number}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <form onSubmit={onSubmit} className="reg__grid">
           {/* Column 1 — Personal information */}
           <div className="surface-card p-4">
             <h3 className="vp__card-title">PERSONAL INFORMATION</h3>
@@ -384,6 +455,8 @@ export default function RegisterPage() {
             </button>
           </div>
         </form>
+          </>
+        )}
       </div>
     </div>
   );
