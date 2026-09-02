@@ -959,6 +959,123 @@ table.table { --bs-table-border-color: var(--vmis-line); }
   max-width: 400px;
 }
 
+/* ---------- Demo quick sign-in ---------- */
+
+.demo-login {
+  margin-bottom: 1.25rem;
+}
+
+.demo-login__label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--vmis-muted);
+  margin-bottom: 0.6rem;
+}
+
+.demo-login__label i {
+  color: var(--vmis-gold-500);
+}
+
+.demo-login__roles {
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+}
+
+.demo-login__role {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  width: 100%;
+  padding: 0.7rem 0.85rem;
+  border: 1px solid var(--vmis-border, #e2e8f0);
+  border-radius: 12px;
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease, transform 0.05s ease;
+}
+
+.demo-login__role:hover:not(:disabled) {
+  border-color: var(--vmis-green-600);
+  box-shadow: 0 4px 14px rgba(15, 81, 50, 0.12);
+}
+
+.demo-login__role:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.demo-login__role:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.demo-login__role.is-busy {
+  border-color: var(--vmis-green-600);
+}
+
+.demo-login__icon {
+  flex: 0 0 auto;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  font-size: 1.15rem;
+  color: #fff;
+  background: linear-gradient(135deg, var(--vmis-green-600), var(--vmis-green-800));
+}
+
+.demo-login__text {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.demo-login__role-name {
+  font-weight: 700;
+  color: var(--vmis-ink, #0f172a);
+  font-size: 0.95rem;
+}
+
+.demo-login__role-caption {
+  font-size: 0.78rem;
+  color: var(--vmis-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.demo-login__chevron {
+  flex: 0 0 auto;
+  color: var(--vmis-muted);
+  font-size: 0.9rem;
+}
+
+.demo-login__divider {
+  display: flex;
+  align-items: center;
+  text-align: center;
+  gap: 0.75rem;
+  margin: 1.1rem 0 0.25rem;
+  color: var(--vmis-muted);
+  font-size: 0.78rem;
+}
+
+.demo-login__divider::before,
+.demo-login__divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: var(--vmis-border, #e2e8f0);
+}
+
 @media (max-width: 900px) {
   .auth { grid-template-columns: 1fr; }
   .auth__brand { display: none; }

@@ -3,12 +3,41 @@ import { useState } from "react";
 import { useApp } from "../context/AppContext.jsx";
 import { ApiError } from "../api/client.js";
 
+// One-tap demo accounts so reviewers can jump straight into each role.
+const DEMO_ROLES = [
+  {
+    key: "gate_officer",
+    label: "Gate Officer",
+    caption: "Register & admit visitors at the gate",
+    icon: "bi-door-open",
+    username: "gate1",
+    password: "gate-pass-1",
+  },
+  {
+    key: "activity_officer",
+    label: "Activity Officer",
+    caption: "Capture activities & payments",
+    icon: "bi-binoculars",
+    username: "activity1",
+    password: "activity-pass-1",
+  },
+  {
+    key: "management",
+    label: "Management",
+    caption: "Dashboards, reports & alerts",
+    icon: "bi-graph-up-arrow",
+    username: "admin",
+    password: "change-me-now",
+  },
+];
+
 export default function LoginPage() {
   const { login, online } = useApp();
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [demoBusy, setDemoBusy] = useState(null);
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -24,6 +53,22 @@ export default function LoginPage() {
       }
     } finally {
       setBusy(false);
+    }
+  }
+
+  async function loginAs(role) {
+    setError(null);
+    setDemoBusy(role.key);
+    try {
+      await login(role.username, role.password);
+    } catch (err) {
+      if (err instanceof ApiError && err.status === 401) {
+        setError("Demo account not available on this server.");
+      } else {
+        setError("Sign-in requires a connection the first time. Please try again online.");
+      }
+    } finally {
+      setDemoBusy(null);
     }
   }
 
@@ -74,6 +119,38 @@ export default function LoginPage() {
                 </div>
               )}
               {error && <div className="alert alert-danger py-2 mb-3">{error}</div>}
+
+              <div className="demo-login">
+                <div className="demo-login__label">
+                  <i className="bi bi-lightning-charge-fill" /> Demo quick sign-in
+                </div>
+                <div className="demo-login__roles">
+                  {DEMO_ROLES.map((role) => {
+                    const loading = demoBusy === role.key;
+                    return (
+                      <button
+                        key={role.key}
+                        type="button"
+                        className={"demo-login__role" + (loading ? " is-busy" : "")}
+                        onClick={() => loginAs(role)}
+                        disabled={Boolean(demoBusy) || busy}
+                      >
+                        <span className="demo-login__icon">
+                          <i className={"bi " + (loading ? "bi-arrow-repeat spin" : role.icon)} />
+                        </span>
+                        <span className="demo-login__text">
+                          <span className="demo-login__role-name">{role.label}</span>
+                          <span className="demo-login__role-caption">{role.caption}</span>
+                        </span>
+                        <i className="bi bi-chevron-right demo-login__chevron" />
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="demo-login__divider">
+                  <span>or sign in manually</span>
+                </div>
+              </div>
 
               <form onSubmit={onSubmit}>
                 <div className="mb-3">
