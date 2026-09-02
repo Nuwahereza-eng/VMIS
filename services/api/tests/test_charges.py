@@ -140,7 +140,7 @@ def test_accommodation_capture(client, activity_officer_token, gate_officer_toke
     visitor_id = _register_visitor(client, gate_officer_token)
     resp = client.post(
         f"/visitors/{visitor_id}/accommodations",
-        headers=auth_header(activity_officer_token),
+        headers=auth_header(gate_officer_token),
         json={"facility": "Paraa Lodge", "nights": 3},
     )
     assert resp.status_code == 201
@@ -154,11 +154,11 @@ def test_accommodation_is_idempotent(client, activity_officer_token, gate_office
     given = str(uuid.uuid4())
     body = {"id": given, "facility": "Red Chilli", "nights": 1}
     first = client.post(
-        f"/visitors/{visitor_id}/accommodations", headers=auth_header(activity_officer_token), json=body
+        f"/visitors/{visitor_id}/accommodations", headers=auth_header(gate_officer_token), json=body
     )
     assert first.status_code == 201
     replay = client.post(
-        f"/visitors/{visitor_id}/accommodations", headers=auth_header(activity_officer_token), json=body
+        f"/visitors/{visitor_id}/accommodations", headers=auth_header(gate_officer_token), json=body
     )
     assert replay.status_code == 200
     assert replay.json()["idempotent"] is True
@@ -176,7 +176,7 @@ def test_charges_summary_totals_per_currency(client, activity_officer_token, gat
         )
     client.post(
         f"/visitors/{visitor_id}/accommodations",
-        headers=auth_header(activity_officer_token),
+        headers=auth_header(gate_officer_token),
         json={"facility": "Paraa", "nights": 2},
     )
 

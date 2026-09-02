@@ -47,7 +47,7 @@ export const NAV_ITEMS = [
     icon: "bi-house-door",
     title: "Accommodation",
     subtitle: "Record and review where visitors are staying",
-    roles: ["gate_officer", "activity_officer", "management"],
+    roles: ["gate_officer", "management"],
   },
   {
     to: "/payments",

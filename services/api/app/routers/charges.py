@@ -39,6 +39,10 @@ from app.schemas import (
 router = APIRouter(prefix="/visitors/{visitor_id}", tags=["charges"])
 
 _capture_roles = require_roles(Role.ACTIVITY_OFFICER, Role.MANAGEMENT)
+# Accommodation is captured during gate registration, so it belongs to the gate
+# station (and management) — not the activity station, which must not repeat
+# work already done at the gate.
+_accommodation_roles = require_roles(Role.GATE_OFFICER, Role.MANAGEMENT)
 _read_roles = require_roles(Role.GATE_OFFICER, Role.ACTIVITY_OFFICER, Role.MANAGEMENT)
 
 
@@ -126,7 +130,7 @@ def add_accommodation(
     payload: AccommodationCreate,
     response: Response,
     db: Session = Depends(get_db),
-    officer: User = Depends(_capture_roles),
+    officer: User = Depends(_accommodation_roles),
 ) -> AccommodationResult:
     if payload.id is not None:
         existing = db.get(Accommodation, payload.id)

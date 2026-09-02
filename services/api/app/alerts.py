@@ -81,9 +81,10 @@ def compute_alerts(db: Session, now: datetime | None = None) -> list[Alert]:
 
     def context(visit: Visit, visitor_key: str, expiry: datetime | None = None) -> dict:
         visitor = visitors_by_id.get(visitor_key)
+        category = getattr(visitor, "category", None) if visitor else None
         return {
             "visitor_name": visitor.full_name if visitor else None,
-            "visitor_category": visitor.category.value if visitor else None,
+            "visitor_category": getattr(category, "value", category),
             "nationality": (visitor.nationality if visitor else None),
             "ticket_number": visit.ticket_number,
             "nights_purchased": visit.nights_purchased,
