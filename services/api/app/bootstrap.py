@@ -48,15 +48,37 @@ _DEMO_USERS = [
 
 
 def seed_demo_users(db: Session) -> list[User]:
-    """Create the fixed demo accounts if enabled and missing (idempotent)."""
+    """Ensure the fixed demo accounts exist with their known credentials.
+
+    Idempotent. When demo mode is on, an existing demo account is reset to the
+    expected password/role/station so the login screen's one-tap buttons always
+    work — including ``admin``, which a prior bootstrap may have created with a
+    different password. Only ever runs when VMIS_SEED_DEMO_USERS is true, so it
+    cannot touch a real deployment.
+    """
     settings = get_settings()
     if not settings.seed_demo_users:
         return []
 
-    created: list[User] = []
+    touched: list[User] = []
     for username, password, full_name, role, station_id in _DEMO_USERS:
-        exists = db.scalar(select(User).where(User.username == username))
-        if exists is not None:
+        existing = db.scalar(select(User).where(User.username == username))
+        if existing is not None:
+            # Reset to the known demo state (password may have drifted).
+            existing.password_hash = hash_password(password)
+            existing.full_name = full_name
+            existing.role = role
+            existing.station_id = station_id
+            existing.is_active = True
+            db.flush()
+            record_audit(
+                db,
+                action="update",
+                entity_type="user",
+                entity_id=str(existing.id),
+                details={"demo_seed": True, "reset": True},
+            )
+            touched.append(existing)
             continue
         user = User(
             username=username,
@@ -70,8 +92,8 @@ def seed_demo_users(db: Session) -> list[User]:
         record_audit(
             db, action="create", entity_type="user", entity_id=str(user.id), details={"demo_seed": True}
         )
-        created.append(user)
+        touched.append(user)
 
-    if created:
+    if touched:
         db.commit()
-    return created
+    return touched
