@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.bootstrap import bootstrap_admin, seed_demo_users
+from app.bootstrap import bootstrap_admin, seed_demo_users, seed_demo_visitors
 from app.config import get_settings
 from app.db import SessionLocal, engine
 from app.models import Base
@@ -38,6 +38,9 @@ async def lifespan(app: FastAPI):
         # Load the development tariff fixture. Idempotent. The real UWA tariff
         # must replace this before production (build prompt section 4.3).
         seed_tariff(db)
+        # On a public demo deploy, populate sample visitors/visits so the
+        # dashboard isn't empty. No-op once the visitors table has any rows.
+        seed_demo_visitors(db)
         # Enforce the PII retention period at start (build prompt section 8).
         if get_settings().retention_enforce_on_start:
             enforce_retention(db)
