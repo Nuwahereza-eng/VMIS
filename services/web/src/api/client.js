@@ -2,6 +2,18 @@
 // flushing the outbound sync queue, and management reads. Feature writes never
 // go straight here; they go to the local store and the outbox first.
 
+// Base URL for the API. Empty by default so the app talks to its own origin
+// (Docker/nginx proxy on-prem, Vite proxy in dev). When the frontend is hosted
+// separately — e.g. the PWA on Vercel and the API on Render — set
+// VITE_API_BASE_URL at build time to the API origin, e.g.
+// https://vmis-api.onrender.com (no trailing slash).
+const API_BASE = (import.meta.env.VITE_API_BASE_URL || "").replace(/\/$/, "");
+
+// Build a full request URL from an app-relative API path.
+export function apiUrl(path) {
+  return API_BASE + path;
+}
+
 export class ApiError extends Error {
   constructor(status, detail) {
     super(detail || `HTTP ${status}`);
@@ -23,7 +35,7 @@ async function parse(res) {
 // OAuth2 password grant: /auth/token expects form-encoded credentials.
 export async function login(username, password) {
   const form = new URLSearchParams({ username, password });
-  const res = await fetch("/auth/token", {
+  const res = await fetch(apiUrl("/auth/token"), {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: form.toString(),
@@ -38,7 +50,7 @@ function authHeaders(token) {
 
 // Upload a batch of queued operations to the sync service.
 export async function syncBatch(token, stationId, operations) {
-  const res = await fetch("/sync/batch", {
+  const res = await fetch(apiUrl("/sync/batch"), {
     method: "POST",
     headers: authHeaders(token),
     body: JSON.stringify({ station_id: stationId, operations }),
@@ -47,7 +59,7 @@ export async function syncBatch(token, stationId, operations) {
 }
 
 export async function verifyVisitor(token, payload) {
-  const res = await fetch("/visitors/verify", {
+  const res = await fetch(apiUrl("/visitors/verify"), {
     method: "POST",
     headers: authHeaders(token),
     body: JSON.stringify({ payload }),
@@ -56,29 +68,29 @@ export async function verifyVisitor(token, payload) {
 }
 
 export async function getActivities(token) {
-  const res = await fetch("/activities", { headers: authHeaders(token) });
+  const res = await fetch(apiUrl("/activities"), { headers: authHeaders(token) });
   return parse(res);
 }
 
 export async function getDashboard(token) {
-  const res = await fetch("/management/dashboard", { headers: authHeaders(token) });
+  const res = await fetch(apiUrl("/management/dashboard"), { headers: authHeaders(token) });
   return parse(res);
 }
 
 // Management-only operational alerts (expiry warnings, overstays, etc.).
 export async function getAlerts(token) {
-  const res = await fetch("/management/alerts", { headers: authHeaders(token) });
+  const res = await fetch(apiUrl("/management/alerts"), { headers: authHeaders(token) });
   return parse(res);
 }
 
 // Management-only user administration.
 export async function getUsers(token) {
-  const res = await fetch("/users", { headers: authHeaders(token) });
+  const res = await fetch(apiUrl("/users"), { headers: authHeaders(token) });
   return parse(res);
 }
 
 export async function createUser(token, payload) {
-  const res = await fetch("/users", {
+  const res = await fetch(apiUrl("/users"), {
     method: "POST",
     headers: authHeaders(token),
     body: JSON.stringify(payload),
@@ -93,7 +105,7 @@ export async function getVisitors(token, { search = "", category = "", limit = 5
   if (category) params.set("category", category);
   params.set("limit", String(limit));
   params.set("offset", String(offset));
-  const res = await fetch(`/visitors?${params.toString()}`, { headers: authHeaders(token) });
+  const res = await fetch(apiUrl(`/visitors?${params.toString()}`), { headers: authHeaders(token) });
   return parse(res);
 }
 
@@ -102,7 +114,7 @@ export async function getReport(token, { granularity = "monthly", start = "", en
   const params = new URLSearchParams({ granularity });
   if (start) params.set("start", start);
   if (end) params.set("end", end);
-  const res = await fetch(`/management/reports?${params.toString()}`, {
+  const res = await fetch(apiUrl(`/management/reports?${params.toString()}`), {
     headers: authHeaders(token),
   });
   return parse(res);
@@ -113,7 +125,7 @@ export async function downloadReportCsv(token, { granularity = "monthly", start 
   const params = new URLSearchParams({ granularity });
   if (start) params.set("start", start);
   if (end) params.set("end", end);
-  const res = await fetch(`/management/reports.csv?${params.toString()}`, {
+  const res = await fetch(apiUrl(`/management/reports.csv?${params.toString()}`), {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) throw new ApiError(res.status, res.statusText);

@@ -36,6 +36,20 @@ class Settings(BaseSettings):
     bootstrap_admin_username: str | None = None
     bootstrap_admin_password: str | None = None
 
+    # Comma-separated list of browser origins allowed to call the API via CORS.
+    # Needed when the PWA is hosted on a different origin than the API (e.g. the
+    # frontend on Vercel and the API on Render). Defaults to "*" (any origin);
+    # tighten to your deployed frontend URL(s) in production. Auth uses Bearer
+    # tokens, not cookies, so credentialed CORS is not required.
+    cors_allow_origins: str = "*"
+
+    @property
+    def cors_origins(self) -> list[str]:
+        raw = (self.cors_allow_origins or "").strip()
+        if raw in ("", "*"):
+            return ["*"]
+        return [origin.strip() for origin in raw.split(",") if origin.strip()]
+
 
 @lru_cache
 def get_settings() -> Settings:
