@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.bootstrap import bootstrap_admin
+from app.bootstrap import bootstrap_admin, seed_demo_users
 from app.config import get_settings
 from app.db import SessionLocal, engine
 from app.models import Base
@@ -29,6 +29,11 @@ async def lifespan(app: FastAPI):
     # migrations (see services/api/migrations); create_all only fills gaps.
     Base.metadata.create_all(bind=engine)
     with SessionLocal() as db:
+        # On a public demo deploy (VMIS_SEED_DEMO_USERS=true) seed the fixed
+        # accounts the login buttons use first; bootstrap_admin then sees a
+        # populated users table and stands down. On a normal deploy this is a
+        # no-op and bootstrap_admin creates the single management account.
+        seed_demo_users(db)
         bootstrap_admin(db)
         # Load the development tariff fixture. Idempotent. The real UWA tariff
         # must replace this before production (build prompt section 4.3).

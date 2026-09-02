@@ -52,6 +52,12 @@ class Settings(BaseSettings):
     bootstrap_admin_username: str | None = None
     bootstrap_admin_password: str | None = None
 
+    # When true, seed the three fixed demo accounts that the login screen's
+    # one-tap buttons expect (admin, gate1, activity1). Intended for public demo
+    # deployments (e.g. Vercel + Render). Idempotent and never overwrites an
+    # existing account. Leave false for real deployments.
+    seed_demo_users: bool = False
+
     # Comma-separated list of browser origins allowed to call the API via CORS.
     # Needed when the PWA is hosted on a different origin than the API (e.g. the
     # frontend on Vercel and the API on Render). Defaults to "*" (any origin);

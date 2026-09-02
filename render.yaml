@@ -40,6 +40,10 @@ services:
       # Set this to a strong password in the Render dashboard after first deploy.
       - key: VMIS_BOOTSTRAP_ADMIN_PASSWORD
         sync: false
+      # Seed the fixed demo accounts the login screen's one-tap buttons use
+      # (admin / gate1 / activity1). Set to "false" for a real deployment.
+      - key: VMIS_SEED_DEMO_USERS
+        value: "true"
       # Comma-separated allowed browser origins. Replace with your Vercel URL(s).
       # "*" lets any origin call the API — fine for a demo, tighten for production.
       - key: VMIS_CORS_ALLOW_ORIGINS
