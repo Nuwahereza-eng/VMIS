@@ -1168,6 +1168,8 @@ table.table { --bs-table-border-color: var(--vmis-line); }
 .vp__title {
   font-size: 1.15rem;
   font-weight: 700;
+  letter-spacing: 0.01em;
+  color: #fff;
   margin: 0;
   flex: 1 1 auto;
 }
@@ -1451,9 +1453,10 @@ table.table { --bs-table-border-color: var(--vmis-line); }
   display: flex;
   align-items: center;
   gap: 0.9rem;
-  background: var(--vmis-green-800);
+  background: linear-gradient(120deg, var(--vmis-green-700) 0%, var(--vmis-green-900) 100%);
   color: #fff;
-  padding: 0.9rem 1.5rem;
+  padding: 1rem 1.5rem;
+  box-shadow: 0 4px 16px rgba(10, 58, 36, 0.28);
 }
 
 .reg__body {
@@ -1530,9 +1533,10 @@ table.table { --bs-table-border-color: var(--vmis-line); }
   display: flex;
   align-items: center;
   gap: 0.9rem;
-  background: var(--vmis-green-800);
+  background: linear-gradient(120deg, var(--vmis-green-700) 0%, var(--vmis-green-900) 100%);
   color: #fff;
-  padding: 0.9rem 1.5rem;
+  padding: 1rem 1.5rem;
+  box-shadow: 0 4px 16px rgba(10, 58, 36, 0.28);
 }
 
 .scan__flash {
@@ -1647,9 +1651,10 @@ table.table { --bs-table-border-color: var(--vmis-line); }
   display: flex;
   align-items: center;
   gap: 0.9rem;
-  background: var(--vmis-green-800);
+  background: linear-gradient(120deg, var(--vmis-green-700) 0%, var(--vmis-green-900) 100%);
   color: #fff;
-  padding: 0.9rem 1.5rem;
+  padding: 1rem 1.5rem;
+  box-shadow: 0 4px 16px rgba(10, 58, 36, 0.28);
 }
 
 .aap__body {
