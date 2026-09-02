@@ -1596,6 +1596,37 @@ table.table { --bs-table-border-color: var(--vmis-line); }
   color: var(--vmis-green-700);
 }
 
+.reg__done-amount {
+  margin-top: 1.2rem;
+  font-size: 1.8rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  color: var(--vmis-green-700);
+}
+
+.reg__done-list {
+  list-style: none;
+  margin: 1rem 0 0;
+  padding: 0;
+  width: 100%;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.reg__done-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.45rem 0.75rem;
+  border-radius: 10px;
+  background: var(--vmis-green-50, #eaf5ef);
+  color: var(--vmis-green-800);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
 .reg__done-facts {
   display: flex;
   flex-wrap: wrap;

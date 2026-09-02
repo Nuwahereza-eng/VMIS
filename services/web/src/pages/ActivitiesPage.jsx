@@ -49,6 +49,7 @@ export default function ActivitiesPage() {
   const [validity, setValidity] = useState(null);
   const [method, setMethod] = useState("Cash");
   const [note, setNote] = useState(null);
+  const [done, setDone] = useState(null);
   const [busy, setBusy] = useState(false);
 
   // Load visitors + the cached fee catalogue (refresh from server when online).
@@ -147,16 +148,102 @@ export default function ActivitiesPage() {
       await refreshOutbox();
       setPreviousActs(await activitiesForVisitor(visitorId));
       const count = selectedIds.length;
+      const names = selectedIds.map((id) => catalogue.find((a) => a.id === id)?.name).filter(Boolean);
       setSelected({});
-      setNote({
-        type: "success",
-        text: `Saved ${count} activit${count === 1 ? "y" : "ies"} · ${method}.`,
+      setDone({
+        visitorId,
+        visitorName: visitor.full_name,
+        code: visitorCode(visitor.id),
+        count,
+        names,
+        amount,
+        currency,
+        method,
       });
+      window.scrollTo({ top: 0, behavior: "smooth" });
     } catch {
       setNote({ type: "danger", text: "Could not save. Please try again." });
     } finally {
       setBusy(false);
     }
+  }
+
+  // Clear the confirmation and let the officer serve another visitor.
+  function recordAnother() {
+    setDone(null);
+    setNote(null);
+    setSelected({});
+    setVisitorId("");
+  }
+
+  if (done) {
+    return (
+      <div className="aap fade-in">
+        <div className="aap__topbar">
+          <button className="vp__back" onClick={() => navigate(-1)} aria-label="Back">
+            <i className="bi bi-arrow-left" />
+          </button>
+          <h1 className="vp__title">Add Activity / Payment</h1>
+        </div>
+
+        <div className="aap__body">
+          <div className="reg__done">
+            <div className="reg__done-card surface-card">
+              <div className="reg__done-badge">
+                <i className="bi bi-check-lg" />
+              </div>
+              <h2 className="reg__done-title">Payment recorded</h2>
+              <p className="reg__done-name">{done.visitorName}</p>
+              <p className="reg__done-sub">
+                {done.count} activit{done.count === 1 ? "y" : "ies"} queued for sync.
+              </p>
+
+              <div className="reg__done-amount">
+                {done.amount > 0 ? formatMinor(done.amount, done.currency) : "No charge"}
+              </div>
+
+              <div className="reg__done-facts">
+                <span className="reg__done-fact">
+                  <i className="bi bi-person-badge" /> {done.code}
+                </span>
+                <span className="reg__done-fact">
+                  <i className="bi bi-credit-card" /> {done.method}
+                </span>
+              </div>
+
+              {done.names.length > 0 && (
+                <ul className="reg__done-list">
+                  {done.names.map((n) => (
+                    <li key={n}>
+                      <i className="bi bi-check2" /> {n}
+                    </li>
+                  ))}
+                </ul>
+              )}
+
+              <div className="reg__done-actions">
+                <button className="btn btn-success" onClick={recordAnother}>
+                  <i className="bi bi-plus-circle" /> Serve another visitor
+                </button>
+                <button
+                  className="btn btn-outline-success"
+                  onClick={() =>
+                    navigate("/visitors", {
+                      state: { search: done.visitorName, openVisitorId: done.visitorId },
+                    })
+                  }
+                >
+                  <i className="bi bi-person-badge" /> View profile
+                </button>
+                <button className="btn btn-light" onClick={() => navigate("/")}>
+                  <i className="bi bi-grid" /> Dashboard
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
