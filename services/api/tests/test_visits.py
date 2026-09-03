@@ -119,6 +119,32 @@ def test_open_list_shows_inside_visitors(client, gate_officer_token):
     assert not any(v["id"] == visit1 for v in open_after.json())
 
 
+def test_visitor_history_lists_visits_for_activity_officer(
+    client, gate_officer_token, activity_officer_token
+):
+    # Gate records the entry; an activity officer must be able to read the
+    # visitor's real ticket/entry details from the system of record.
+    visitor_id = _register_visitor(client, gate_officer_token)
+    visit_id = _entry(client, gate_officer_token, visitor_id).json()["visit"]["id"]
+
+    resp = client.get(
+        "/visits",
+        params={"visitor_id": visitor_id},
+        headers=auth_header(activity_officer_token),
+    )
+    assert resp.status_code == 200, resp.text
+    body = resp.json()
+    assert len(body) == 1
+    assert body[0]["id"] == visit_id
+    assert body[0]["ticket_number"] == "TKT-1"
+    assert body[0]["entry_gate"]
+
+
+def test_visitor_history_requires_auth(client):
+    assert client.get("/visits", params={"visitor_id": str(uuid.uuid4())}).status_code == 401
+
+
+
 def test_expired_ticket_status_is_derived(client, gate_officer_token):
     visitor_id = _register_visitor(client, gate_officer_token)
     # Entry two days in the past with a one-night ticket -> expired now.

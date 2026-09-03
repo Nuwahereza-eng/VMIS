@@ -1410,6 +1410,7 @@ table.table { --bs-table-border-color: var(--vmis-line); }
   display: flex;
   align-items: center;
   gap: 0.7rem;
+  flex-wrap: wrap;
 }
 
 .vp__code {
@@ -1427,15 +1428,47 @@ table.table { --bs-table-border-color: var(--vmis-line); }
 }
 
 .vp__nat {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
   color: var(--vmis-body);
   font-size: 0.92rem;
-  margin-top: 0.15rem;
+  margin-top: 0.25rem;
+}
+
+.vp__nat i { color: var(--vmis-muted); }
+
+.vp__cat {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--vmis-green-700);
+  background: var(--vmis-green-50);
+  border: 1px solid var(--vmis-green-100);
+  padding: 0.08rem 0.5rem;
+  border-radius: 999px;
+}
+
+.vp__metarow {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+  margin-top: 0.5rem;
 }
 
 .vp__meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
   color: var(--vmis-muted);
   font-size: 0.86rem;
-  margin-top: 0.2rem;
+}
+
+.vp__meta i { font-size: 0.9rem; opacity: 0.85; }
+
+.vp__meta--muted {
+  margin-top: 0.5rem;
+  font-style: italic;
 }
 
 .vp__remaining {

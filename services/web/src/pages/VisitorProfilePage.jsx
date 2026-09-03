@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useApp } from "../context/AppContext.jsx";
-import { getActivities } from "../api/client.js";
+import { getActivities, getVisitorVisits } from "../api/client.js";
 import { getMeta, setMeta } from "../db/store.js";
 import {
   CATEGORIES,
@@ -91,10 +91,30 @@ export default function VisitorProfilePage({ visitor, onBack, onScanQr }) {
         accommodationsForVisitor(visitor.id),
       ]);
       if (!alive) return;
-      setVisits(v);
+
+      // Hydrate visits from the system of record when online, so a visitor
+      // registered/entered at another station still shows their real ticket,
+      // entry time and gate here (the local store only holds this device's
+      // writes). Server records win on id; local-only records are kept.
+      let mergedVisits = v;
+      if (online) {
+        try {
+          const serverVisits = await getVisitorVisits(session.token, visitor.id);
+          if (Array.isArray(serverVisits)) {
+            const byId = new Map(mergedVisits.map((x) => [x.id, x]));
+            for (const sv of serverVisits) byId.set(sv.id, sv);
+            mergedVisits = [...byId.values()];
+          }
+        } catch {
+          /* keep local visits */
+        }
+      }
+      if (!alive) return;
+
+      setVisits(mergedVisits);
       setActivities(a);
       setAccommodations(acc);
-      const open = v.find((x) => !x.exit_timestamp) || null;
+      const open = mergedVisits.find((x) => !x.exit_timestamp) || null;
       setOpenVisit(open);
 
       let cat = (await getMeta(CATALOGUE_KEY)) || [];
@@ -155,11 +175,22 @@ export default function VisitorProfilePage({ visitor, onBack, onScanQr }) {
   const anyUnpriced = payments.some((p) => p.amount === null);
 
   const active = validity?.status === "Active";
-  const statusPill = !openVisit
-    ? { text: "NO TICKET", cls: "neutral" }
-    : active
-      ? { text: "VALID", cls: "active" }
-      : { text: "EXPIRED", cls: "expired" };
+  // The visit whose entry details head the profile: the open one if inside,
+  // otherwise the most recent on record. Visits are stored most-recent-first
+  // from the server; sort defensively for local-only records too.
+  const heroVisit =
+    openVisit ||
+    [...visits].sort((a, b) =>
+      String(b.entry_timestamp).localeCompare(String(a.entry_timestamp)),
+    )[0] ||
+    null;
+  const statusPill = !heroVisit
+    ? { text: "No ticket", cls: "neutral", icon: "bi-dash-circle" }
+    : openVisit
+      ? active
+        ? { text: "Valid", cls: "active", icon: "bi-check-circle-fill" }
+        : { text: "Expired", cls: "expired", icon: "bi-x-circle-fill" }
+      : { text: "Checked out", cls: "neutral", icon: "bi-box-arrow-right" };
 
   async function onRecordExit() {
     if (!openVisit) return;
@@ -196,15 +227,36 @@ export default function VisitorProfilePage({ visitor, onBack, onScanQr }) {
           <div className="vp__ident">
             <div className="vp__idrow">
               <span className="vp__code">{displayCode(visitor.id)}</span>
-              <span className={"pill " + statusPill.cls}>{statusPill.text}</span>
+              <span className={"pill " + statusPill.cls}>
+                <i className={"bi " + statusPill.icon} /> {statusPill.text}
+              </span>
             </div>
             <div className="vp__name">{visitor.full_name}</div>
             <div className="vp__nat">
-              <i className="bi bi-geo-alt" /> {visitor.country || visitor.nationality || "Not provided"} (
-              {visitor.category})
+              <i className="bi bi-geo-alt" />
+              <span>{visitor.country || visitor.nationality || "Not provided"}</span>
+              <span className="vp__cat">{CATEGORY_LABEL[visitor.category] || visitor.category}</span>
             </div>
-            <div className="vp__meta">Entry: {formatDateTime(openVisit?.entry_timestamp)}</div>
-            <div className="vp__meta">Entry Gate: {openVisit?.entry_gate || "Not recorded"}</div>
+            {heroVisit ? (
+              <div className="vp__metarow">
+                <span className="vp__meta">
+                  <i className="bi bi-box-arrow-in-right" /> {formatDateTime(heroVisit.entry_timestamp)}
+                </span>
+                <span className="vp__meta">
+                  <i className="bi bi-door-open" /> {heroVisit.entry_gate || "—"}
+                </span>
+                {heroVisit.ticket_number && (
+                  <span className="vp__meta">
+                    <i className="bi bi-ticket-perforated" /> {heroVisit.ticket_number}
+                  </span>
+                )}
+              </div>
+            ) : (
+              <div className="vp__meta vp__meta--muted">
+                <i className="bi bi-info-circle" />{" "}
+                {online ? "No visit on record yet" : "Reconnect to load visit details"}
+              </div>
+            )}
           </div>
           <div className="vp__remaining">
             <div className="vp__remaining-label">

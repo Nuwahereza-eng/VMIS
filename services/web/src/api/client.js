@@ -72,6 +72,21 @@ export async function getActivities(token) {
   return parse(res);
 }
 
+// A visitor's entry/exit history from the system of record (any station).
+export async function getVisitorVisits(token, visitorId) {
+  const params = new URLSearchParams({ visitor_id: visitorId });
+  const res = await fetch(apiUrl(`/visits?${params.toString()}`), { headers: authHeaders(token) });
+  return parse(res);
+}
+
+// A visitor's captured activities from the system of record (any station).
+export async function getVisitorActivities(token, visitorId) {
+  const res = await fetch(apiUrl(`/visitors/${visitorId}/activities`), {
+    headers: authHeaders(token),
+  });
+  return parse(res);
+}
+
 export async function getDashboard(token) {
   const res = await fetch(apiUrl("/management/dashboard"), { headers: authHeaders(token) });
   return parse(res);

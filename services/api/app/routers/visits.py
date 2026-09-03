@@ -8,7 +8,7 @@ computed on every response by the ticket engine and never stored.
 
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -137,6 +137,26 @@ def list_open_visits(
     """Open (unmatched) stays: visitors currently inside the park."""
     visits = db.scalars(
         select(Visit).where(Visit.exit_timestamp.is_(None)).order_by(Visit.entry_timestamp)
+    ).all()
+    return [_to_out(v) for v in visits]
+
+
+@router.get("", response_model=list[VisitOut])
+def list_visits_for_visitor(
+    visitor_id: uuid.UUID = Query(...),
+    db: Session = Depends(get_db),
+    _: User = Depends(_read_roles),
+) -> list[VisitOut]:
+    """A visitor's full entry/exit history from the system of record.
+
+    Lets any station show a visitor's real ticket/entry details even when the
+    visit was recorded at a different station (the local device only holds its
+    own writes). Most recent entry first.
+    """
+    visits = db.scalars(
+        select(Visit)
+        .where(Visit.visitor_id == visitor_id)
+        .order_by(Visit.entry_timestamp.desc())
     ).all()
     return [_to_out(v) for v in visits]
 
