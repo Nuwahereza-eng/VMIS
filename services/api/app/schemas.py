@@ -98,6 +98,28 @@ class VisitorListOut(BaseModel):
     items: list[VisitorListItem] = Field(default_factory=list)
 
 
+class VisitorLookupItem(BaseModel):
+    """Minimal visitor projection for the officer-facing service picker.
+
+    Deliberately excludes contact details and other extended PII: officers only
+    need enough to identify the right person when assigning an activity or
+    accommodation. The full park-wide registry stays management-only.
+    """
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    full_name: str
+    id_number: str
+    category: VisitorCategory
+    is_inside: bool = False
+
+
+class VisitorLookupOut(BaseModel):
+    items: list[VisitorLookupItem] = Field(default_factory=list)
+
+
+
 class DuplicateMatch(BaseModel):
     id: uuid.UUID
     full_name: str

@@ -5,13 +5,13 @@ import { LODGES } from "../domain/reference.js";
 import { visitorCode } from "../domain/ids.js";
 import {
   allAccommodations,
-  allVisitors,
   recordAccommodation,
+  serviceableVisitors,
 } from "../data/repository.js";
 import PageHeader from "../components/PageHeader.jsx";
 
 export default function AccommodationPage() {
-  const { refreshOutbox } = useApp();
+  const { session, online, refreshOutbox } = useApp();
   const [visitors, setVisitors] = useState([]);
   const [rows, setRows] = useState([]);
   const [form, setForm] = useState({ visitor_id: "", facility: LODGES[0], nights: 1 });
@@ -19,13 +19,14 @@ export default function AccommodationPage() {
   const [busy, setBusy] = useState(false);
 
   async function refresh() {
-    setVisitors(await allVisitors());
+    setVisitors(await serviceableVisitors(session?.token, online));
     setRows(await allAccommodations());
   }
 
   useEffect(() => {
     refresh();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [online]);
 
   const nameFor = (id) => visitors.find((v) => v.id === id)?.full_name || id;
 

@@ -109,6 +109,18 @@ export async function getVisitors(token, { search = "", category = "", limit = 5
   return parse(res);
 }
 
+// Officer-facing visitor picker (gate/activity/management). Minimal fields, so
+// an activity/accommodation officer can find gate-registered visitors to serve.
+export async function lookupVisitors(token, { search = "", limit = 100 } = {}) {
+  const params = new URLSearchParams();
+  if (search) params.set("search", search);
+  params.set("limit", String(limit));
+  const res = await fetch(apiUrl(`/visitors/lookup?${params.toString()}`), {
+    headers: authHeaders(token),
+  });
+  return parse(res);
+}
+
 // Management-only periodic report (visitors, entries, activities, revenue).
 export async function getReport(token, { granularity = "monthly", start = "", end = "" } = {}) {
   const params = new URLSearchParams({ granularity });

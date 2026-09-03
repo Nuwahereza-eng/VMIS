@@ -30,6 +30,8 @@ from app.schemas import (
     VisitorCreate,
     VisitorListItem,
     VisitorListOut,
+    VisitorLookupItem,
+    VisitorLookupOut,
     VisitorOut,
 )
 
@@ -106,6 +108,59 @@ def list_visitors(
         for v in visitors
     ]
     return VisitorListOut(total=total, items=items)
+
+
+@router.get("/lookup", response_model=VisitorLookupOut)
+def lookup_visitors(
+    search: str | None = Query(default=None, max_length=64),
+    limit: int = Query(default=50, ge=1, le=200),
+    db: Session = Depends(get_db),
+    _: User = Depends(_read_roles),
+) -> VisitorLookupOut:
+    """Lightweight visitor picker for gate/activity officers.
+
+    An activity or accommodation officer serves visitors who were registered at
+    the gate, so they must be able to find any visitor in the system of record.
+    Unlike the management registry this returns only identifying fields (no
+    contact/extended PII) and is not paginated for browsing — it is a search
+    box. With no search term it returns the most recent arrivals.
+    """
+    filters = []
+    if search:
+        term = f"%{search.strip()}%"
+        filters.append(or_(Visitor.full_name.ilike(term), Visitor.id_number.ilike(term)))
+
+    visitors = list(
+        db.scalars(
+            select(Visitor)
+            .where(*filters)
+            .order_by(Visitor.server_received_at.desc().nullslast(), Visitor.created_at.desc())
+            .limit(limit)
+        ).all()
+    )
+
+    ids = [v.id for v in visitors]
+    open_ids: set[uuid.UUID] = set()
+    if ids:
+        open_ids = set(
+            db.scalars(
+                select(Visit.visitor_id)
+                .where(Visit.visitor_id.in_(ids), Visit.exit_timestamp.is_(None))
+                .distinct()
+            ).all()
+        )
+
+    items = [
+        VisitorLookupItem(
+            id=v.id,
+            full_name=v.full_name,
+            id_number=v.id_number,
+            category=v.category,
+            is_inside=v.id in open_ids,
+        )
+        for v in visitors
+    ]
+    return VisitorLookupOut(items=items)
 
 
 @router.post("", response_model=RegistrationResult, status_code=status.HTTP_201_CREATED)

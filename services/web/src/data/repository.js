@@ -7,6 +7,7 @@ import { STORES, get, getAll, getAllByIndex, put } from "../db/store.js";
 import { enqueue } from "../sync/queue.js";
 import { uuid4 } from "../domain/ids.js";
 import { CATEGORY_CURRENCY } from "../domain/categories.js";
+import { lookupVisitors } from "../api/client.js";
 
 function nowIso() {
   return new Date().toISOString();
@@ -65,6 +66,27 @@ export async function getVisitor(id) {
 
 export async function allVisitors() {
   return getAll(STORES.visitors);
+}
+
+// Visitors an officer can serve (assign activities/accommodation to). Combines
+// this device's local records with the park-wide registry when online, so a
+// visitor registered at the gate is reachable from an activity/accommodation
+// station. Falls back to local-only when offline or if the lookup fails.
+export async function serviceableVisitors(token, online, search = "") {
+  const local = await getAll(STORES.visitors);
+  if (!online || !token) return local;
+  try {
+    const { items = [] } = await lookupVisitors(token, { search, limit: 100 });
+    const byId = new Map(local.map((v) => [v.id, v]));
+    for (const v of items) {
+      if (!byId.has(v.id)) byId.set(v.id, v);
+    }
+    return [...byId.values()].sort((a, b) =>
+      String(a.full_name).localeCompare(String(b.full_name)),
+    );
+  } catch {
+    return local;
+  }
 }
 
 // Offline QR/id verification against the LOCAL record (build prompt section

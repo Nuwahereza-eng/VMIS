@@ -144,6 +144,30 @@ def test_officer_cannot_list_visitor_registry(client, gate_officer_token, activi
     assert client.get("/visitors", headers=auth_header(activity_officer_token)).status_code == 403
 
 
+def test_officer_can_lookup_visitors_to_serve(client, gate_officer_token, activity_officer_token):
+    # A gate officer registers; an activity officer must be able to find them.
+    registered = _register(
+        client, gate_officer_token, id_number="LOOKUP-1", full_name="Serve Me"
+    ).json()["visitor"]
+
+    resp = client.get(
+        "/visitors/lookup", params={"search": "serve"}, headers=auth_header(activity_officer_token)
+    )
+    assert resp.status_code == 200, resp.text
+    items = resp.json()["items"]
+    match = next(i for i in items if i["id"] == registered["id"])
+    assert match["full_name"] == "Serve Me"
+    assert match["id_number"] == "LOOKUP-1"
+    assert match["category"] == registered["category"]
+    # Minimal projection: no extended contact PII is exposed to officers.
+    assert "phone" not in match
+    assert "email" not in match
+
+
+def test_lookup_requires_auth(client):
+    assert client.get("/visitors/lookup").status_code == 401
+
+
 def test_registry_requires_auth(client):
     assert client.get("/visitors").status_code == 401
 

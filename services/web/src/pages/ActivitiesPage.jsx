@@ -9,8 +9,8 @@ import { visitorCode } from "../domain/ids.js";
 import { computeValidity } from "../domain/tickets.js";
 import {
   activitiesForVisitor,
-  allVisitors,
   captureActivity,
+  serviceableVisitors,
   visitsForVisitor,
 } from "../data/repository.js";
 
@@ -55,7 +55,7 @@ export default function ActivitiesPage() {
   // Load visitors + the cached fee catalogue (refresh from server when online).
   useEffect(() => {
     (async () => {
-      setVisitors(await allVisitors());
+      setVisitors(await serviceableVisitors(session.token, online));
       let cat = (await getMeta(CATALOGUE_KEY)) || [];
       if (online) {
         try {
