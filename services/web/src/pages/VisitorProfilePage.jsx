@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useApp } from "../context/AppContext.jsx";
-import { getActivities, getVisitorVisits } from "../api/client.js";
+import { getActivities, getVisitorAccommodations, getVisitorActivities, getVisitorVisits } from "../api/client.js";
 import { getMeta, setMeta } from "../db/store.js";
 import {
   CATEGORIES,
@@ -97,23 +97,42 @@ export default function VisitorProfilePage({ visitor, onBack, onScanQr }) {
       // entry time and gate here (the local store only holds this device's
       // writes). Server records win on id; local-only records are kept.
       let mergedVisits = v;
+      let mergedActivities = a;
+      let mergedAccommodations = acc;
       if (online) {
+        const mergeById = (local, server) => {
+          if (!Array.isArray(server)) return local;
+          const byId = new Map(local.map((x) => [x.id, x]));
+          for (const sv of server) byId.set(sv.id, sv);
+          return [...byId.values()];
+        };
         try {
-          const serverVisits = await getVisitorVisits(session.token, visitor.id);
-          if (Array.isArray(serverVisits)) {
-            const byId = new Map(mergedVisits.map((x) => [x.id, x]));
-            for (const sv of serverVisits) byId.set(sv.id, sv);
-            mergedVisits = [...byId.values()];
-          }
+          mergedVisits = mergeById(mergedVisits, await getVisitorVisits(session.token, visitor.id));
         } catch {
           /* keep local visits */
+        }
+        try {
+          mergedActivities = mergeById(
+            mergedActivities,
+            await getVisitorActivities(session.token, visitor.id),
+          );
+        } catch {
+          /* keep local activities */
+        }
+        try {
+          mergedAccommodations = mergeById(
+            mergedAccommodations,
+            await getVisitorAccommodations(session.token, visitor.id),
+          );
+        } catch {
+          /* keep local accommodations */
         }
       }
       if (!alive) return;
 
       setVisits(mergedVisits);
-      setActivities(a);
-      setAccommodations(acc);
+      setActivities(mergedActivities);
+      setAccommodations(mergedAccommodations);
       const open = mergedVisits.find((x) => !x.exit_timestamp) || null;
       setOpenVisit(open);
 

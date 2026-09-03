@@ -186,6 +186,14 @@ export async function getVisitorActivities(token, visitorId) {
   return parse(res);
 }
 
+// A visitor's recorded accommodation from the system of record (any station).
+export async function getVisitorAccommodations(token, visitorId) {
+  const res = await fetch(apiUrl(`/visitors/${visitorId}/accommodations`), {
+    headers: authHeaders(token),
+  });
+  return parse(res);
+}
+
 export async function getDashboard(token) {
   const res = await fetch(apiUrl("/management/dashboard"), { headers: authHeaders(token) });
   return parse(res);
