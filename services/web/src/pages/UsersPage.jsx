@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 
 import { useApp } from "../context/AppContext.jsx";
-import { createUser, getUsers } from "../api/client.js";
+import { createUser, deleteUser, getUsers, updateUser } from "../api/client.js";
 import PageHeader from "../components/PageHeader.jsx";
 
 const ROLES = [
@@ -18,6 +18,7 @@ function emptyForm() {
     full_name: "",
     role: "gate_officer",
     station_id: "",
+    is_active: true,
   };
 }
 
@@ -25,10 +26,15 @@ export default function UsersPage() {
   const { session, online } = useApp();
   const [users, setUsers] = useState([]);
   const [form, setForm] = useState(emptyForm());
+  const [editingId, setEditingId] = useState(null);
   const [note, setNote] = useState(null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deletingId, setDeletingId] = useState(null);
+
+  const isEditing = editingId !== null;
+  const isSelf = (u) => u.id === session.userId || u.username === session.username;
 
   const load = useCallback(async () => {
     setError(null);
@@ -47,6 +53,28 @@ export default function UsersPage() {
     else setLoading(false);
   }, [online, load]);
 
+  function startEdit(u) {
+    setEditingId(u.id);
+    setForm({
+      username: u.username,
+      password: "",
+      full_name: u.full_name || "",
+      role: u.role,
+      station_id: u.station_id || "",
+      is_active: u.is_active,
+    });
+    setNote(null);
+    setError(null);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }
+
+  function cancelEdit() {
+    setEditingId(null);
+    setForm(emptyForm());
+    setNote(null);
+    setError(null);
+  }
+
   async function onSubmit(e) {
     e.preventDefault();
     setNote(null);
@@ -55,26 +83,62 @@ export default function UsersPage() {
       setError("Username must be at least 3 characters.");
       return;
     }
-    if (form.password.length < 8) {
+    // Password is required to create, optional (leave blank to keep) when editing.
+    if (!isEditing && form.password.length < 8) {
       setError("Password must be at least 8 characters.");
+      return;
+    }
+    if (isEditing && form.password && form.password.length < 8) {
+      setError("New password must be at least 8 characters.");
       return;
     }
     setSaving(true);
     try {
-      await createUser(session.token, {
-        username: form.username.trim(),
-        password: form.password,
-        full_name: form.full_name.trim() || null,
-        role: form.role,
-        station_id: form.station_id.trim() || null,
-      });
+      if (isEditing) {
+        const payload = {
+          username: form.username.trim(),
+          full_name: form.full_name.trim() || null,
+          role: form.role,
+          station_id: form.station_id.trim() || null,
+          is_active: form.is_active,
+        };
+        if (form.password) payload.password = form.password;
+        await updateUser(session.token, editingId, payload);
+        setNote({ type: "success", text: "User updated." });
+        setEditingId(null);
+      } else {
+        await createUser(session.token, {
+          username: form.username.trim(),
+          password: form.password,
+          full_name: form.full_name.trim() || null,
+          role: form.role,
+          station_id: form.station_id.trim() || null,
+        });
+        setNote({ type: "success", text: "User created." });
+      }
       setForm(emptyForm());
-      setNote({ type: "success", text: "User created." });
       await load();
     } catch (err) {
-      setError(err?.message || "Could not create the user.");
+      setError(err?.message || (isEditing ? "Could not update the user." : "Could not create the user."));
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function onDelete(u) {
+    if (!window.confirm(`Delete user "${u.username}"? This cannot be undone.`)) return;
+    setNote(null);
+    setError(null);
+    setDeletingId(u.id);
+    try {
+      await deleteUser(session.token, u.id);
+      if (editingId === u.id) cancelEdit();
+      setNote({ type: "success", text: `User "${u.username}" deleted.` });
+      await load();
+    } catch (err) {
+      setError(err?.message || "Could not delete the user.");
+    } finally {
+      setDeletingId(null);
     }
   }
 
@@ -101,8 +165,8 @@ export default function UsersPage() {
         <div className="col-lg-5">
           <form onSubmit={onSubmit} className="surface-card p-4">
             <div className="card-title-row">
-              <i className="bi bi-person-plus" />
-              <h2>Add user</h2>
+              <i className={"bi " + (isEditing ? "bi-pencil-square" : "bi-person-plus")} />
+              <h2>{isEditing ? "Edit user" : "Add user"}</h2>
             </div>
             {note && <div className={`alert alert-${note.type}`}>{note.text}</div>}
             {error && <div className="alert alert-danger">{error}</div>}
@@ -117,13 +181,17 @@ export default function UsersPage() {
               />
             </div>
             <div className="mb-3">
-              <label className="form-label">Password</label>
+              <label className="form-label">
+                {isEditing ? "New password" : "Password"}
+                {isEditing && <span className="muted"> (leave blank to keep current)</span>}
+              </label>
               <input
                 type="password"
                 className="form-control"
                 value={form.password}
                 onChange={(e) => setForm({ ...form, password: e.target.value })}
                 autoComplete="new-password"
+                placeholder={isEditing ? "••••••••" : ""}
               />
             </div>
             <div className="mb-3">
@@ -157,9 +225,31 @@ export default function UsersPage() {
                 onChange={(e) => setForm({ ...form, station_id: e.target.value })}
               />
             </div>
-            <button className="btn btn-success" disabled={!online || saving}>
-              <i className="bi bi-check2-circle" /> {saving ? "Saving…" : "Create user"}
-            </button>
+            {isEditing && (
+              <div className="form-check form-switch mb-3">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  id="user-active"
+                  checked={form.is_active}
+                  onChange={(e) => setForm({ ...form, is_active: e.target.checked })}
+                />
+                <label className="form-check-label" htmlFor="user-active">
+                  Account active
+                </label>
+              </div>
+            )}
+            <div className="d-flex gap-2">
+              <button className="btn btn-success" disabled={!online || saving}>
+                <i className="bi bi-check2-circle" />{" "}
+                {saving ? "Saving…" : isEditing ? "Save changes" : "Create user"}
+              </button>
+              {isEditing && (
+                <button type="button" className="btn btn-ghost" onClick={cancelEdit} disabled={saving}>
+                  Cancel
+                </button>
+              )}
+            </div>
           </form>
         </div>
 
@@ -185,14 +275,16 @@ export default function UsersPage() {
                       <th>User</th>
                       <th>Role</th>
                       <th>Station</th>
-                      <th className="text-end">Status</th>
+                      <th>Status</th>
+                      <th className="text-end">Actions</th>
                     </tr>
                   </thead>
                   <tbody>
                     {users.map((u) => (
-                      <tr key={u.id}>
+                      <tr key={u.id} className={editingId === u.id ? "table-active" : undefined}>
                         <td>
                           {u.username}
+                          {isSelf(u) && <span className="pill neutral ms-2">You</span>}
                           {u.full_name && (
                             <div className="muted" style={{ fontSize: "0.78rem" }}>
                               {u.full_name}
@@ -201,10 +293,28 @@ export default function UsersPage() {
                         </td>
                         <td>{ROLE_LABELS[u.role] || u.role}</td>
                         <td>{u.station_id || "Not assigned"}</td>
-                        <td className="text-end">
+                        <td>
                           <span className={"pill " + (u.is_active ? "green" : "expired")}>
                             {u.is_active ? "Active" : "Disabled"}
                           </span>
+                        </td>
+                        <td className="text-end text-nowrap">
+                          <button
+                            className="icon-btn icon-btn--sm"
+                            title="Edit user"
+                            onClick={() => startEdit(u)}
+                            disabled={!online}
+                          >
+                            <i className="bi bi-pencil" />
+                          </button>
+                          <button
+                            className="icon-btn icon-btn--sm icon-btn--danger ms-1"
+                            title={isSelf(u) ? "You cannot delete your own account" : "Delete user"}
+                            onClick={() => onDelete(u)}
+                            disabled={!online || isSelf(u) || deletingId === u.id}
+                          >
+                            <i className={"bi " + (deletingId === u.id ? "bi-arrow-repeat spin" : "bi-trash")} />
+                          </button>
                         </td>
                       </tr>
                     ))}

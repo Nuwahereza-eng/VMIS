@@ -22,6 +22,18 @@ class UserCreate(BaseModel):
     station_id: str | None = Field(default=None, max_length=64)
 
 
+class UserUpdate(BaseModel):
+    # All fields optional: only the ones supplied are changed. An empty/omitted
+    # password leaves the existing credential untouched.
+    username: str | None = Field(default=None, min_length=3, max_length=64)
+    password: str | None = Field(default=None, min_length=8, max_length=128)
+    role: Role | None = None
+    full_name: str | None = Field(default=None, max_length=128)
+    station_id: str | None = Field(default=None, max_length=64)
+    is_active: bool | None = None
+
+
+
 class UserOut(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

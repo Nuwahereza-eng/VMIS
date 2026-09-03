@@ -113,6 +113,23 @@ export async function createUser(token, payload) {
   return parse(res);
 }
 
+export async function updateUser(token, userId, payload) {
+  const res = await fetch(apiUrl(`/users/${userId}`), {
+    method: "PATCH",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+  return parse(res);
+}
+
+export async function deleteUser(token, userId) {
+  const res = await fetch(apiUrl(`/users/${userId}`), {
+    method: "DELETE",
+    headers: authHeaders(token),
+  });
+  return parse(res);
+}
+
 // Management-only park-wide visitor registry (server-backed, online only).
 export async function getVisitors(token, { search = "", category = "", limit = 50, offset = 0 } = {}) {
   const params = new URLSearchParams();
