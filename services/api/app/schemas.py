@@ -241,6 +241,63 @@ class ActivityCatalogueEntry(ActivityOut):
     rates: list[ActivityRateOut] = Field(default_factory=list)
 
 
+class ActivityRateInput(BaseModel):
+    # Currency is derived from the category (CATEGORY_CURRENCY), so callers only
+    # supply the amount in integer minor units.
+    category: VisitorCategory
+    amount_minor: int = Field(ge=0)
+
+
+class ActivityCreate(BaseModel):
+    code: str = Field(min_length=1, max_length=64)
+    name: str = Field(min_length=1, max_length=128)
+    is_free: bool = False
+    is_active: bool = True
+    rates: list[ActivityRateInput] = Field(default_factory=list)
+
+
+class ActivityUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=128)
+    is_free: bool | None = None
+    is_active: bool | None = None
+
+
+class GateOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    name: str
+    is_active: bool
+
+
+class GateCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=128)
+    is_active: bool = True
+
+
+class GateUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=128)
+    is_active: bool | None = None
+
+
+class FacilityOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    name: str
+    is_active: bool
+
+
+class FacilityCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=128)
+    is_active: bool = True
+
+
+class FacilityUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=128)
+    is_active: bool | None = None
+
+
 class VisitorActivityCreate(BaseModel):
     # Client-supplied station UUID for idempotent offline replay; omit to let
     # the server generate one.

@@ -72,6 +72,105 @@ export async function getActivities(token) {
   return parse(res);
 }
 
+// --- Management-only catalogue / configuration (server-backed, online only) ---
+
+export async function createActivity(token, payload) {
+  const res = await fetch(apiUrl("/activities"), {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+  return parse(res);
+}
+
+export async function updateActivity(token, activityId, payload) {
+  const res = await fetch(apiUrl(`/activities/${activityId}`), {
+    method: "PATCH",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+  return parse(res);
+}
+
+export async function setActivityRates(token, activityId, rates) {
+  const res = await fetch(apiUrl(`/activities/${activityId}/rates`), {
+    method: "PUT",
+    headers: authHeaders(token),
+    body: JSON.stringify(rates),
+  });
+  return parse(res);
+}
+
+export async function deleteActivity(token, activityId) {
+  const res = await fetch(apiUrl(`/activities/${activityId}`), {
+    method: "DELETE",
+    headers: authHeaders(token),
+  });
+  return parse(res);
+}
+
+export async function getGates(token) {
+  const res = await fetch(apiUrl("/config/gates"), { headers: authHeaders(token) });
+  return parse(res);
+}
+
+export async function createGate(token, payload) {
+  const res = await fetch(apiUrl("/config/gates"), {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+  return parse(res);
+}
+
+export async function updateGate(token, gateId, payload) {
+  const res = await fetch(apiUrl(`/config/gates/${gateId}`), {
+    method: "PATCH",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+  return parse(res);
+}
+
+export async function deleteGate(token, gateId) {
+  const res = await fetch(apiUrl(`/config/gates/${gateId}`), {
+    method: "DELETE",
+    headers: authHeaders(token),
+  });
+  return parse(res);
+}
+
+export async function getFacilities(token) {
+  const res = await fetch(apiUrl("/config/facilities"), { headers: authHeaders(token) });
+  return parse(res);
+}
+
+export async function createFacility(token, payload) {
+  const res = await fetch(apiUrl("/config/facilities"), {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+  return parse(res);
+}
+
+export async function updateFacility(token, facilityId, payload) {
+  const res = await fetch(apiUrl(`/config/facilities/${facilityId}`), {
+    method: "PATCH",
+    headers: authHeaders(token),
+    body: JSON.stringify(payload),
+  });
+  return parse(res);
+}
+
+export async function deleteFacility(token, facilityId) {
+  const res = await fetch(apiUrl(`/config/facilities/${facilityId}`), {
+    method: "DELETE",
+    headers: authHeaders(token),
+  });
+  return parse(res);
+}
+
 // A visitor's entry/exit history from the system of record (any station).
 export async function getVisitorVisits(token, visitorId) {
   const params = new URLSearchParams({ visitor_id: visitorId });

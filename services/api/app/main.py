@@ -14,13 +14,14 @@ from app.routers import (
     activities,
     auth,
     charges,
+    config,
     management,
     sync,
     users,
     visitors,
     visits,
 )
-from app.seed import seed_tariff
+from app.seed import seed_facilities, seed_gates, seed_tariff
 
 
 @asynccontextmanager
@@ -38,6 +39,10 @@ async def lifespan(app: FastAPI):
         # Load the development tariff fixture. Idempotent. The real UWA tariff
         # must replace this before production (build prompt section 4.3).
         seed_tariff(db)
+        # Seed the editable gate and facility master lists (only when empty, so
+        # management edits are never overwritten on restart).
+        seed_gates(db)
+        seed_facilities(db)
         # On a public demo deploy, populate sample visitors/visits so the
         # dashboard isn't empty. No-op once the visitors table has any rows.
         seed_demo_visitors(db)
@@ -72,6 +77,7 @@ def create_app() -> FastAPI:
     app.include_router(visits.router)
     app.include_router(activities.router)
     app.include_router(charges.router)
+    app.include_router(config.router)
     app.include_router(sync.router)
     app.include_router(management.router)
 

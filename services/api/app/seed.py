@@ -9,13 +9,39 @@ tariff must be confirmed and loaded before production (build prompt section 4.3)
 import json
 from pathlib import Path
 
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.models.activity import Activity, ActivityRate
+from app.models.config import Facility, Gate
 from app.models.enums import CATEGORY_CURRENCY, VisitorCategory
 
 _DEFAULT_FIXTURE = Path(__file__).parent / "seeds" / "tariff_dev.json"
+
+# Initial master lists mirror the previous hardcoded frontend reference lists.
+# They are only inserted when the table is empty, so management edits (renames,
+# deletions, deactivations) are never overwritten on restart.
+_DEFAULT_GATES = [
+    "Kichumbanyobo Gate",
+    "Tangi Gate",
+    "Bugungu Gate",
+    "Wankwar Gate",
+    "Chobe Gate",
+    "Mubako Gate",
+]
+
+_DEFAULT_FACILITIES = [
+    "Paraa Safari Lodge",
+    "Pakuba Safari Lodge",
+    "Nile Safari Lodge",
+    "Fort Murchison",
+    "Red Chilli Rest Camp",
+    "Sambiya River Lodge",
+    "UWA Campsite",
+    "Community Campsite",
+    "Outside the park",
+]
+
 
 
 def seed_tariff(db: Session, fixture_path: Path | None = None) -> int:
@@ -57,3 +83,23 @@ def seed_tariff(db: Session, fixture_path: Path | None = None) -> int:
 
     db.commit()
     return len(data["activities"])
+
+
+def seed_gates(db: Session) -> int:
+    """Insert the default gate list only when the gates table is empty."""
+    if db.scalar(select(func.count()).select_from(Gate)):
+        return 0
+    for name in _DEFAULT_GATES:
+        db.add(Gate(name=name, is_active=True))
+    db.commit()
+    return len(_DEFAULT_GATES)
+
+
+def seed_facilities(db: Session) -> int:
+    """Insert the default facility list only when the facilities table is empty."""
+    if db.scalar(select(func.count()).select_from(Facility)):
+        return 0
+    for name in _DEFAULT_FACILITIES:
+        db.add(Facility(name=name, is_active=True))
+    db.commit()
+    return len(_DEFAULT_FACILITIES)

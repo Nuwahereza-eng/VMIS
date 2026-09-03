@@ -105,6 +105,14 @@ export const NAV_ITEMS = [
     subtitle: "Manage officer and management accounts",
     roles: ["management"],
   },
+  {
+    to: "/config",
+    label: "Configuration",
+    icon: "bi-sliders",
+    title: "Configuration",
+    subtitle: "Manage activities, prices, gates, and accommodation facilities",
+    roles: ["management"],
+  },
 ];
 
 // Nav items a given role may see. Items without a `roles` list are open to all

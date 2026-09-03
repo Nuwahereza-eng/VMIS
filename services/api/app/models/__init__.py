@@ -4,6 +4,7 @@ from app.models.activity import Activity, ActivityRate
 from app.models.audit import AuditEntry
 from app.models.base import Base
 from app.models.booking import Accommodation, VisitorActivity
+from app.models.config import Facility, Gate
 from app.models.enums import Role, VisitorCategory
 from app.models.sync import SyncException, SyncOperation
 from app.models.user import User
@@ -21,6 +22,8 @@ __all__ = [
     "ActivityRate",
     "VisitorActivity",
     "Accommodation",
+    "Gate",
+    "Facility",
     "SyncOperation",
     "SyncException",
     "AuditEntry",

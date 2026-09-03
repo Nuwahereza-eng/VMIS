@@ -17,6 +17,7 @@ import ReportsPage from "./pages/ReportsPage.jsx";
 import SyncPage from "./pages/SyncPage.jsx";
 import SettingsPage from "./pages/SettingsPage.jsx";
 import UsersPage from "./pages/UsersPage.jsx";
+import ConfigurationPage from "./pages/ConfigurationPage.jsx";
 
 export default function App() {
   const { ready, session } = useApp();
@@ -55,6 +56,7 @@ export default function App() {
         <Route path="/sync" element={<SyncPage />} />
         {allowed.has("/settings") && <Route path="/settings" element={<SettingsPage />} />}
         {allowed.has("/users") && <Route path="/users" element={<UsersPage />} />}
+        {allowed.has("/config") && <Route path="/config" element={<ConfigurationPage />} />}
         <Route path="*" element={<Navigate to={home} replace />} />
       </Routes>
     </Layout>
