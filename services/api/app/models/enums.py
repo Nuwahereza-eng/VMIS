@@ -20,6 +20,32 @@ class VisitorCategory(str, enum.Enum):
     EAC = "EAC"  # East African Citizen (UGX)
 
 
+class ScanKind(str, enum.Enum):
+    """Where in the visit journey a QR scan happened (supervisor priority 3)."""
+
+    ENTRANCE = "entrance"  # scanned at a park entry gate
+    CHECKPOINT = "checkpoint"  # scanned at an internal checkpoint
+    EXIT = "exit"  # scanned when leaving the park
+
+
+class VisitorStatus(str, enum.Enum):
+    """Derived lifecycle status of a visitor (supervisor priority 3).
+
+    Never stored: computed from the latest visit, ticket validity, and scan
+    trail. ``BOOKED``/``EXPECTED``/``ARRIVED`` become reachable once the
+    pre-booking module lands; the rest are derivable today.
+    """
+
+    NO_TICKET = "No ticket"
+    BOOKED = "Booked"
+    EXPECTED = "Expected"
+    ARRIVED = "Arrived"
+    INSIDE = "Inside the park"
+    AT_CHECKPOINT = "At a checkpoint"
+    EXITED = "Exited"
+    EXPIRED = "Ticket expired"
+
+
 # Currency each category is billed in (build prompt Table 1). The three foreign
 # categories pay in USD; East African Citizens pay in UGX.
 CATEGORY_CURRENCY: dict[VisitorCategory, str] = {

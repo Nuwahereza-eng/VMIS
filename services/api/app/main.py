@@ -16,6 +16,7 @@ from app.routers import (
     charges,
     config,
     management,
+    scans,
     sync,
     users,
     visitors,
@@ -75,6 +76,7 @@ def create_app() -> FastAPI:
     app.include_router(users.router)
     app.include_router(visitors.router)
     app.include_router(visits.router)
+    app.include_router(scans.router)
     app.include_router(activities.router)
     app.include_router(charges.router)
     app.include_router(config.router)

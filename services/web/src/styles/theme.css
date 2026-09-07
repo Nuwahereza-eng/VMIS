@@ -1622,6 +1622,80 @@ table.table { --bs-table-border-color: var(--vmis-line); }
   white-space: nowrap;
 }
 
+/* Movement & status tab (supervisor priority 3) */
+.vp__status-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.vp__status-label {
+  font-size: 0.86rem;
+  color: var(--vmis-muted);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.vp__scan-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+
+.vp__timeline {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+.vp__timeline-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+}
+
+.vp__timeline-dot {
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  background: var(--vmis-green-600);
+  font-size: 0.95rem;
+}
+
+.vp__timeline-dot--entrance {
+  background: var(--vmis-green-600);
+}
+
+.vp__timeline-dot--checkpoint {
+  background: #b8860b;
+}
+
+.vp__timeline-dot--exit {
+  background: var(--vmis-muted);
+}
+
+.vp__timeline-body {
+  flex: 1 1 auto;
+}
+
+.vp__timeline-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
 .vp__total {
   text-align: center;
   display: flex;

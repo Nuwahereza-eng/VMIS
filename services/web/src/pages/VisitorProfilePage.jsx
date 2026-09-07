@@ -2,7 +2,15 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useApp } from "../context/AppContext.jsx";
-import { getActivities, getVisitorAccommodations, getVisitorActivities, getVisitorVisits } from "../api/client.js";
+import {
+  getActivities,
+  getVisitorAccommodations,
+  getVisitorActivities,
+  getVisitorScans,
+  getVisitorStatus,
+  getVisitorVisits,
+  recordScan,
+} from "../api/client.js";
 import { getMeta, setMeta } from "../db/store.js";
 import {
   CATEGORIES,
@@ -62,7 +70,31 @@ function formatRemaining(totalSeconds) {
   return `${days} Day${days === 1 ? "" : "s"} ${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
 }
 
-const TABS = ["Overview", "Activities", "Accommodation", "Payments", "History"];
+const TABS = ["Overview", "Activities", "Accommodation", "Payments", "Movement", "History"];
+
+// Visual treatment for each derived lifecycle status (supervisor priority 3).
+const STATUS_STYLE = {
+  "No ticket": { cls: "neutral", icon: "bi-dash-circle" },
+  Booked: { cls: "neutral", icon: "bi-calendar-check" },
+  Expected: { cls: "neutral", icon: "bi-hourglass-split" },
+  Arrived: { cls: "active", icon: "bi-box-arrow-in-right" },
+  "Inside the park": { cls: "active", icon: "bi-tree-fill" },
+  "At a checkpoint": { cls: "active", icon: "bi-sign-turn-right-fill" },
+  Exited: { cls: "neutral", icon: "bi-box-arrow-right" },
+  "Ticket expired": { cls: "expired", icon: "bi-x-circle-fill" },
+};
+
+const SCAN_KIND_LABEL = {
+  entrance: "Entrance",
+  checkpoint: "Checkpoint",
+  exit: "Exit",
+};
+
+const SCAN_KIND_ICON = {
+  entrance: "bi-box-arrow-in-right",
+  checkpoint: "bi-sign-turn-right-fill",
+  exit: "bi-box-arrow-right",
+};
 
 export default function VisitorProfilePage({ visitor, onBack, onScanQr }) {
   const { session, online } = useApp();
@@ -77,6 +109,10 @@ export default function VisitorProfilePage({ visitor, onBack, onScanQr }) {
   const [validity, setValidity] = useState(null);
   const [exited, setExited] = useState(false);
   const [exiting, setExiting] = useState(false);
+  const [scans, setScans] = useState([]);
+  const [serverStatus, setServerStatus] = useState(null);
+  const [scanning, setScanning] = useState(null);
+  const [scanError, setScanError] = useState("");
 
   const currency = CATEGORY_CURRENCY[visitor.category] || "USD";
 
@@ -146,6 +182,21 @@ export default function VisitorProfilePage({ visitor, onBack, onScanQr }) {
         }
       }
       if (alive) setCatalogue(cat);
+
+      // Checkpoint scan trail + derived status live only on the server today.
+      if (online) {
+        try {
+          const [trail, status] = await Promise.all([
+            getVisitorScans(session.token, visitor.id),
+            getVisitorStatus(session.token, visitor.id),
+          ]);
+          if (!alive) return;
+          setScans(Array.isArray(trail) ? trail : []);
+          setServerStatus(status || null);
+        } catch {
+          /* status/scans unavailable offline */
+        }
+      }
     })();
     return () => {
       alive = false;
@@ -211,6 +262,15 @@ export default function VisitorProfilePage({ visitor, onBack, onScanQr }) {
         : { text: "Expired", cls: "expired", icon: "bi-x-circle-fill" }
       : { text: "Checked out", cls: "neutral", icon: "bi-box-arrow-right" };
 
+  // When the server-derived lifecycle status is available, it is authoritative
+  // and reflects the checkpoint trail; fall back to the local ticket pill.
+  const lifecyclePill = serverStatus
+    ? {
+        text: serverStatus.status,
+        ...(STATUS_STYLE[serverStatus.status] || { cls: "neutral", icon: "bi-dash-circle" }),
+      }
+    : statusPill;
+
   async function onRecordExit() {
     if (!openVisit) return;
     setExiting(true);
@@ -220,6 +280,25 @@ export default function VisitorProfilePage({ visitor, onBack, onScanQr }) {
       setOpenVisit(null);
     } finally {
       setExiting(false);
+    }
+  }
+
+  // Log a checkpoint/entrance/exit scan against this visitor (online-only).
+  async function onScan(kind) {
+    if (!online) {
+      setScanError("Scanning needs a connection. Reconnect and try again.");
+      return;
+    }
+    setScanError("");
+    setScanning(kind);
+    try {
+      const result = await recordScan(session.token, visitor.id, { kind });
+      if (result?.scan) setScans((prev) => [result.scan, ...prev]);
+      if (result?.status) setServerStatus(result.status);
+    } catch (err) {
+      setScanError(err?.message || "Could not record the scan.");
+    } finally {
+      setScanning(null);
     }
   }
 
@@ -246,8 +325,8 @@ export default function VisitorProfilePage({ visitor, onBack, onScanQr }) {
           <div className="vp__ident">
             <div className="vp__idrow">
               <span className="vp__code">{displayCode(visitor.id)}</span>
-              <span className={"pill " + statusPill.cls}>
-                <i className={"bi " + statusPill.icon} /> {statusPill.text}
+              <span className={"pill " + lifecyclePill.cls}>
+                <i className={"bi " + lifecyclePill.icon} /> {lifecyclePill.text}
               </span>
             </div>
             <div className="vp__name">{visitor.full_name}</div>
@@ -488,6 +567,83 @@ export default function VisitorProfilePage({ visitor, onBack, onScanQr }) {
                   </tbody>
                 </table>
               </div>
+            )}
+          </div>
+        )}
+
+        {tab === "Movement" && (
+          <div className="surface-card p-4">
+            <h3 className="vp__card-title">MOVEMENT &amp; STATUS</h3>
+            <div className="vp__status-row">
+              <span className="vp__status-label">Current status</span>
+              <span className={"pill " + lifecyclePill.cls}>
+                <i className={"bi " + lifecyclePill.icon} /> {lifecyclePill.text}
+              </span>
+            </div>
+
+            {scanError && <div className="alert alert-danger py-2 mt-3 mb-0">{scanError}</div>}
+
+            <div className="vp__scan-actions">
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => onScan("entrance")}
+                disabled={!online || scanning !== null}
+              >
+                <i className={"bi " + (scanning === "entrance" ? "bi-arrow-repeat spin" : "bi-box-arrow-in-right")} />{" "}
+                Entrance scan
+              </button>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => onScan("checkpoint")}
+                disabled={!online || scanning !== null}
+              >
+                <i className={"bi " + (scanning === "checkpoint" ? "bi-arrow-repeat spin" : "bi-sign-turn-right-fill")} />{" "}
+                Checkpoint scan
+              </button>
+              <button
+                className="btn btn-ghost btn-sm"
+                onClick={() => onScan("exit")}
+                disabled={!online || scanning !== null}
+              >
+                <i className={"bi " + (scanning === "exit" ? "bi-arrow-repeat spin" : "bi-box-arrow-right")} />{" "}
+                Exit scan
+              </button>
+            </div>
+            {!online && (
+              <div className="muted mt-2" style={{ fontSize: "0.86rem" }}>
+                <i className="bi bi-wifi-off" /> Scanning and status need a connection.
+              </div>
+            )}
+
+            <h3 className="vp__card-title mt-4">MOVEMENT TRAIL</h3>
+            {scans.length === 0 ? (
+              <div className="empty-state mb-0">
+                <i className="bi bi-geo" />{" "}
+                {online ? "No scans recorded yet." : "Reconnect to load the movement trail."}
+              </div>
+            ) : (
+              <ul className="vp__timeline">
+                {scans.map((s) => (
+                  <li key={s.id} className="vp__timeline-item">
+                    <span className={"vp__timeline-dot vp__timeline-dot--" + s.kind}>
+                      <i className={"bi " + (SCAN_KIND_ICON[s.kind] || "bi-geo")} />
+                    </span>
+                    <div className="vp__timeline-body">
+                      <div className="vp__timeline-top">
+                        <span className="fw-semibold" style={{ color: "var(--vmis-ink)" }}>
+                          {SCAN_KIND_LABEL[s.kind] || s.kind}
+                        </span>
+                        <span className="muted" style={{ fontSize: "0.82rem" }}>
+                          {formatDateTime(s.scanned_at)}
+                        </span>
+                      </div>
+                      <div className="muted" style={{ fontSize: "0.86rem" }}>
+                        <i className="bi bi-geo-alt" /> {s.location}
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
         )}

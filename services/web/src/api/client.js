@@ -194,6 +194,34 @@ export async function getVisitorAccommodations(token, visitorId) {
   return parse(res);
 }
 
+// --- Supervisor priority 3: checkpoint scanning + visitor status ---
+
+// Record a QR scan at an entrance, checkpoint, or exit. Server derives status.
+export async function recordScan(token, visitorId, { kind, location } = {}) {
+  const res = await fetch(apiUrl(`/visitors/${visitorId}/scans`), {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify({ kind, location: location ?? null }),
+  });
+  return parse(res);
+}
+
+// A visitor's full movement trail (newest first).
+export async function getVisitorScans(token, visitorId) {
+  const res = await fetch(apiUrl(`/visitors/${visitorId}/scans`), {
+    headers: authHeaders(token),
+  });
+  return parse(res);
+}
+
+// A visitor's current derived lifecycle status.
+export async function getVisitorStatus(token, visitorId) {
+  const res = await fetch(apiUrl(`/visitors/${visitorId}/status`), {
+    headers: authHeaders(token),
+  });
+  return parse(res);
+}
+
 export async function getDashboard(token) {
   const res = await fetch(apiUrl("/management/dashboard"), { headers: authHeaders(token) });
   return parse(res);

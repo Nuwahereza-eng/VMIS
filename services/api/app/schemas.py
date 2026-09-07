@@ -6,7 +6,7 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.models.enums import Role, VisitorCategory
+from app.models.enums import Role, ScanKind, VisitorCategory, VisitorStatus
 
 
 class Token(BaseModel):
@@ -346,6 +346,54 @@ class AccommodationOut(BaseModel):
 class AccommodationResult(BaseModel):
     accommodation: AccommodationOut
     idempotent: bool = False
+
+
+# --- Supervisor priority 3: visitor status lifecycle + checkpoint scanning ---
+
+
+class ScanCreate(BaseModel):
+    id: uuid.UUID | None = None
+    kind: ScanKind
+    # Scan-point label (gate or checkpoint name). Defaults server-side to the
+    # officer's station when omitted.
+    location: str | None = Field(default=None, max_length=128)
+    scanned_at: datetime | None = None
+    origin_station_id: str | None = Field(default=None, max_length=64)
+    client_created_at: datetime | None = None
+
+
+class ScanOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    visitor_id: uuid.UUID
+    visit_id: uuid.UUID | None
+    kind: ScanKind
+    location: str
+    scanned_at: datetime
+    officer_id: uuid.UUID | None
+    origin_station_id: str | None
+
+
+class ScanResult(BaseModel):
+    scan: ScanOut
+    # True when this exact scan id already existed (idempotent replay).
+    idempotent: bool = False
+    # The visitor's recomputed status after this scan.
+    status: "VisitorStatusOut"
+
+
+class VisitorStatusOut(BaseModel):
+    """Derived lifecycle status of a visitor (never stored)."""
+
+    visitor_id: uuid.UUID
+    status: VisitorStatus
+    # Latest scan, if any.
+    last_scan: ScanOut | None = None
+    # Open visit ticket state, if the visitor is currently on a ticket.
+    ticket: TicketInfo | None = None
+    # Total scans recorded for the visitor.
+    scan_count: int = 0
 
 
 class CurrencyTotal(BaseModel):
