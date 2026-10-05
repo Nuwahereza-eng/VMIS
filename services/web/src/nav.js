@@ -34,6 +34,14 @@ export const NAV_ITEMS = [
     roles: ["gate_officer", "management"],
   },
   {
+    to: "/bookings",
+    label: "Pre-Bookings",
+    icon: "bi-calendar-check",
+    title: "Pre-bookings",
+    subtitle: "Capture expressions of interest and see who is expected each day",
+    roles: ["gate_officer", "activity_officer", "management"],
+  },
+  {
     to: "/activities",
     label: "Activities",
     icon: "bi-binoculars",

@@ -222,6 +222,61 @@ export async function getVisitorStatus(token, visitorId) {
   return parse(res);
 }
 
+// --- Supervisor priority 2: pre-booking / expression of interest ---
+
+// Capture a pre-booking (expression of interest) before a visitor arrives.
+export async function createBooking(token, booking) {
+  const res = await fetch(apiUrl("/bookings"), {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify(booking),
+  });
+  return parse(res);
+}
+
+// List bookings, optionally filtered by date range and status.
+export async function getBookings(token, { onDate, dateFrom, dateTo, status } = {}) {
+  const params = new URLSearchParams();
+  if (onDate) params.set("on_date", onDate);
+  if (dateFrom) params.set("date_from", dateFrom);
+  if (dateTo) params.set("date_to", dateTo);
+  if (status) params.set("booking_status", status);
+  const qs = params.toString();
+  const res = await fetch(apiUrl(`/bookings${qs ? `?${qs}` : ""}`), {
+    headers: authHeaders(token),
+  });
+  return parse(res);
+}
+
+export async function updateBooking(token, bookingId, changes) {
+  const res = await fetch(apiUrl(`/bookings/${bookingId}`), {
+    method: "PATCH",
+    headers: authHeaders(token),
+    body: JSON.stringify(changes),
+  });
+  return parse(res);
+}
+
+export async function deleteBooking(token, bookingId) {
+  const res = await fetch(apiUrl(`/bookings/${bookingId}`), {
+    method: "DELETE",
+    headers: authHeaders(token),
+  });
+  return parse(res);
+}
+
+// Expected (not-yet-arrived) visitors grouped per day, for management.
+export async function getExpectedSummary(token, { dateFrom, dateTo } = {}) {
+  const params = new URLSearchParams();
+  if (dateFrom) params.set("date_from", dateFrom);
+  if (dateTo) params.set("date_to", dateTo);
+  const qs = params.toString();
+  const res = await fetch(apiUrl(`/bookings/expected-summary${qs ? `?${qs}` : ""}`), {
+    headers: authHeaders(token),
+  });
+  return parse(res);
+}
+
 export async function getDashboard(token) {
   const res = await fetch(apiUrl("/management/dashboard"), { headers: authHeaders(token) });
   return parse(res);

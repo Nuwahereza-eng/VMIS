@@ -18,6 +18,7 @@ import SyncPage from "./pages/SyncPage.jsx";
 import SettingsPage from "./pages/SettingsPage.jsx";
 import UsersPage from "./pages/UsersPage.jsx";
 import ConfigurationPage from "./pages/ConfigurationPage.jsx";
+import BookingsPage from "./pages/BookingsPage.jsx";
 
 export default function App() {
   const { ready, session } = useApp();
@@ -47,6 +48,7 @@ export default function App() {
         {allowed.has("/visitors") && <Route path="/visitors" element={<VisitorsPage />} />}
         {allowed.has("/register") && <Route path="/register" element={<RegisterPage />} />}
         {allowed.has("/verify") && <Route path="/verify" element={<VerifyPage />} />}
+        {allowed.has("/bookings") && <Route path="/bookings" element={<BookingsPage />} />}
         {allowed.has("/activities") && <Route path="/activities" element={<ActivitiesPage />} />}
         {allowed.has("/accommodation") && <Route path="/accommodation" element={<AccommodationPage />} />}
         {allowed.has("/payments") && <Route path="/payments" element={<PaymentsPage />} />}

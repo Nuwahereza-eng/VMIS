@@ -4,6 +4,7 @@ from app.models.activity import Activity, ActivityRate
 from app.models.audit import AuditEntry
 from app.models.base import Base
 from app.models.booking import Accommodation, VisitorActivity
+from app.models.booking_request import Booking
 from app.models.config import Facility, Gate
 from app.models.enums import Role, ScanKind, VisitorCategory, VisitorStatus
 from app.models.scan import ScanEvent
@@ -26,6 +27,7 @@ __all__ = [
     "ActivityRate",
     "VisitorActivity",
     "Accommodation",
+    "Booking",
     "Gate",
     "Facility",
     "SyncOperation",

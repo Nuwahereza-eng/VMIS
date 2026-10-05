@@ -46,6 +46,15 @@ class VisitorStatus(str, enum.Enum):
     EXPIRED = "Ticket expired"
 
 
+class BookingStatus(str, enum.Enum):
+    """Lifecycle of a pre-booking / expression of interest (supervisor priority 2)."""
+
+    PENDING = "pending"  # captured, visitor expected but not yet arrived
+    ARRIVED = "arrived"  # linked to a registered visitor on arrival
+    CANCELLED = "cancelled"  # withdrawn before arrival
+    NO_SHOW = "no_show"  # intended date passed with no arrival
+
+
 # Currency each category is billed in (build prompt Table 1). The three foreign
 # categories pay in USD; East African Citizens pay in UGX.
 CATEGORY_CURRENCY: dict[VisitorCategory, str] = {

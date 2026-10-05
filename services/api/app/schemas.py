@@ -1,12 +1,12 @@
 """Pydantic request/response schemas."""
 
 import uuid
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
-from app.models.enums import Role, ScanKind, VisitorCategory, VisitorStatus
+from app.models.enums import BookingStatus, Role, ScanKind, VisitorCategory, VisitorStatus
 
 
 class Token(BaseModel):
@@ -394,6 +394,71 @@ class VisitorStatusOut(BaseModel):
     ticket: TicketInfo | None = None
     # Total scans recorded for the visitor.
     scan_count: int = 0
+
+
+# --- Supervisor priority 2: pre-booking / expression of interest ---
+
+
+class BookingCreate(BaseModel):
+    full_name: str = Field(min_length=1, max_length=128)
+    intended_date: date
+    country: str | None = Field(default=None, max_length=64)
+    phone: str | None = Field(default=None, max_length=32)
+    email: str | None = Field(default=None, max_length=128)
+    tour_company: str | None = Field(default=None, max_length=128)
+    category: VisitorCategory | None = None
+    party_size: int = Field(default=1, ge=1, le=500)
+    expected_gate: str | None = Field(default=None, max_length=64)
+    length_of_stay_nights: int = Field(default=1, ge=1, le=365)
+    accommodation: str | None = Field(default=None, max_length=128)
+    notes: str | None = Field(default=None, max_length=500)
+
+
+class BookingUpdate(BaseModel):
+    full_name: str | None = Field(default=None, min_length=1, max_length=128)
+    intended_date: date | None = None
+    country: str | None = Field(default=None, max_length=64)
+    phone: str | None = Field(default=None, max_length=32)
+    email: str | None = Field(default=None, max_length=128)
+    tour_company: str | None = Field(default=None, max_length=128)
+    category: VisitorCategory | None = None
+    party_size: int | None = Field(default=None, ge=1, le=500)
+    expected_gate: str | None = Field(default=None, max_length=64)
+    length_of_stay_nights: int | None = Field(default=None, ge=1, le=365)
+    accommodation: str | None = Field(default=None, max_length=128)
+    notes: str | None = Field(default=None, max_length=500)
+    status: BookingStatus | None = None
+    visitor_id: uuid.UUID | None = None
+
+
+class BookingOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    full_name: str
+    intended_date: date
+    country: str | None
+    phone: str | None
+    email: str | None
+    tour_company: str | None
+    category: VisitorCategory | None
+    party_size: int
+    expected_gate: str | None
+    length_of_stay_nights: int
+    accommodation: str | None
+    notes: str | None
+    status: BookingStatus
+    visitor_id: uuid.UUID | None
+    arrived_at: datetime | None
+    created_at: datetime
+
+
+class ExpectedDay(BaseModel):
+    """Count of expected (not-yet-arrived) visitors on one date."""
+
+    intended_date: date
+    bookings: int
+    expected_visitors: int
 
 
 class CurrencyTotal(BaseModel):

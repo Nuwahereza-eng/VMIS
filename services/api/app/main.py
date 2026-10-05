@@ -13,6 +13,7 @@ from app.retention import enforce_retention
 from app.routers import (
     activities,
     auth,
+    bookings,
     charges,
     config,
     management,
@@ -77,6 +78,7 @@ def create_app() -> FastAPI:
     app.include_router(visitors.router)
     app.include_router(visits.router)
     app.include_router(scans.router)
+    app.include_router(bookings.router)
     app.include_router(activities.router)
     app.include_router(charges.router)
     app.include_router(config.router)
