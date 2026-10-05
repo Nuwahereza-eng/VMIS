@@ -248,6 +248,43 @@ export default function DashboardPage() {
                 emptyText="No accommodation recorded yet."
               />
             </div>
+            <div className="col-lg-6">
+              <BreakdownCard
+                icon="bi-signpost-split"
+                title="Inside now: walk-in vs pre-booked"
+                rows={data.by_origin || []}
+                emptyText="No visitors inside the park right now."
+              />
+            </div>
+            <div className="col-lg-6">
+              <div className="surface-card p-4 h-100">
+                <div className="card-title-row">
+                  <i className="bi bi-cash-coin" />
+                  <h3>Revenue by visitor origin</h3>
+                </div>
+                {(data.revenue_by_origin || []).every((o) => (o.totals || []).length === 0) ? (
+                  <p className="muted mb-0" style={{ fontSize: "0.9rem" }}>
+                    No revenue captured yet.
+                  </p>
+                ) : (
+                  <ul className="breakdown-list">
+                    {(data.revenue_by_origin || []).map((o) => (
+                      <li key={o.origin} className="breakdown-list__row">
+                        <span className="breakdown-list__label">{o.origin}</span>
+                        <span className="breakdown-list__count">
+                          {(o.totals || []).length === 0
+                            ? formatMinor(0, prefs.currency)
+                            : formatMinor(
+                                sumMinorIn(o.totals, prefs.currency, prefs.usdToUgx),
+                                prefs.currency,
+                              )}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
           </div>
 
           <div className="row g-3 mt-1">

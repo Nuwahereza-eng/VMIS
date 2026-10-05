@@ -22,6 +22,7 @@ from app.models.base import ensure_utc
 from app.models.enums import ScanKind, VisitorStatus
 from app.models.scan import ScanEvent
 from app.models.visit import Visit
+from app.origin import PRE_BOOKED, WALK_IN, is_prebooked
 from app.schemas import ScanOut, TicketInfo, VisitorStatusOut
 from app.tickets import compute_validity
 
@@ -84,6 +85,7 @@ def compute_status(db: Session, visitor_id) -> VisitorStatusOut:
     return VisitorStatusOut(
         visitor_id=visitor_id,
         status=status,
+        origin=PRE_BOOKED if is_prebooked(db, visitor_id) else WALK_IN,
         last_scan=_scan_out(last_scan) if last_scan is not None else None,
         ticket=ticket,
         scan_count=scan_count,

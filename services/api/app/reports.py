@@ -21,6 +21,7 @@ from app.models.base import ensure_utc
 from app.models.booking import VisitorActivity
 from app.models.visit import Visit
 from app.models.visitor import Visitor
+from app.origin import prebooked_visitor_ids
 
 
 class Granularity(str, enum.Enum):
@@ -36,9 +37,15 @@ class ReportRow:
     period: str
     visitors_registered: int = 0
     entries: int = 0
+    # Walk-in vs pre-booked split of entries (supervisor priority).
+    pre_booked: int = 0
+    walk_in: int = 0
     activities: int = 0
     # Currency code -> minor units. Never merged across currencies.
     revenue: dict[str, int] = field(default_factory=dict)
+    # Same revenue, split by visitor origin.
+    revenue_pre_booked: dict[str, int] = field(default_factory=dict)
+    revenue_walk_in: dict[str, int] = field(default_factory=dict)
 
 
 @dataclass
@@ -87,6 +94,7 @@ def build_report(
 ) -> Report:
     lo, hi = _coerce_range(start, end)
     buckets: dict[str, ReportRow] = {}
+    prebooked = prebooked_visitor_ids(db)
 
     def _row(moment: datetime) -> ReportRow:
         key = period_key(moment, granularity)
@@ -110,7 +118,12 @@ def build_report(
     for visit in db.scalars(select(Visit)).all():
         when = _in_range(visit.entry_timestamp)
         if when is not None:
-            _row(when).entries += 1
+            row = _row(when)
+            row.entries += 1
+            if visit.visitor_id in prebooked:
+                row.pre_booked += 1
+            else:
+                row.walk_in += 1
 
     for line in db.scalars(select(VisitorActivity)).all():
         when = _in_range(line.created_at)
@@ -119,6 +132,8 @@ def build_report(
         row = _row(when)
         row.activities += 1
         row.revenue[line.currency] = row.revenue.get(line.currency, 0) + line.amount_minor
+        split = row.revenue_pre_booked if line.visitor_id in prebooked else row.revenue_walk_in
+        split[line.currency] = split.get(line.currency, 0) + line.amount_minor
 
     rows = [buckets[key] for key in sorted(buckets)]
     return Report(granularity=granularity.value, start=lo, end=hi, rows=rows)
@@ -127,7 +142,7 @@ def build_report(
 def report_to_csv(report: Report) -> str:
     """Flatten a report to CSV. Revenue expands to one column per currency seen."""
     currencies = sorted({cur for row in report.rows for cur in row.revenue})
-    header = ["period", "visitors_registered", "entries", "activities"]
+    header = ["period", "visitors_registered", "entries", "pre_booked", "walk_in", "activities"]
     header += [f"revenue_{cur}" for cur in currencies]
 
     buffer = io.StringIO()
@@ -135,7 +150,7 @@ def report_to_csv(report: Report) -> str:
     writer.writerow(header)
     for row in report.rows:
         writer.writerow(
-            [row.period, row.visitors_registered, row.entries, row.activities]
+            [row.period, row.visitors_registered, row.entries, row.pre_booked, row.walk_in, row.activities]
             + [row.revenue.get(cur, 0) for cur in currencies]
         )
     return buffer.getvalue()

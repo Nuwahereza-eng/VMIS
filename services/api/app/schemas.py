@@ -388,6 +388,8 @@ class VisitorStatusOut(BaseModel):
 
     visitor_id: uuid.UUID
     status: VisitorStatus
+    # "pre_booked" if a booking was matched to this visitor, else "walk_in".
+    origin: str = "walk_in"
     # Latest scan, if any.
     last_scan: ScanOut | None = None
     # Open visit ticket state, if the visitor is currently on a ticket.
@@ -564,6 +566,11 @@ class StationSyncOut(BaseModel):
     operations: int
 
 
+class OriginRevenueOut(BaseModel):
+    origin: str
+    totals: list[CurrencyTotal]
+
+
 class DashboardOut(BaseModel):
     inside_now: int
     entered_today: int = 0
@@ -574,8 +581,10 @@ class DashboardOut(BaseModel):
     by_category: list[CountOut]
     by_activity: list[CountOut]
     by_lodge: list[CountOut]
+    by_origin: list[CountOut] = Field(default_factory=list)
     revenue: list[CurrencyTotal]
     revenue_today: list[CurrencyTotal] = Field(default_factory=list)
+    revenue_by_origin: list[OriginRevenueOut] = Field(default_factory=list)
     stations: list[StationSyncOut]
     alert_counts: list[CountOut]
 
@@ -584,8 +593,12 @@ class ReportRowOut(BaseModel):
     period: str
     visitors_registered: int
     entries: int
+    pre_booked: int = 0
+    walk_in: int = 0
     activities: int
     revenue: list[CurrencyTotal]
+    revenue_pre_booked: list[CurrencyTotal] = Field(default_factory=list)
+    revenue_walk_in: list[CurrencyTotal] = Field(default_factory=list)
 
 
 class ReportOut(BaseModel):

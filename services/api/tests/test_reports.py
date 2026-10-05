@@ -62,7 +62,14 @@ def test_report_to_csv_has_header_and_rows(db_session):
     report = build_report(db_session, Granularity.MONTHLY)
     text = report_to_csv(report)
     rows = list(csv.reader(io.StringIO(text)))
-    assert rows[0][:4] == ["period", "visitors_registered", "entries", "activities"]
+    assert rows[0][:6] == [
+        "period",
+        "visitors_registered",
+        "entries",
+        "pre_booked",
+        "walk_in",
+        "activities",
+    ]
     assert any(r[0] == "2026-04" for r in rows[1:])
 
 

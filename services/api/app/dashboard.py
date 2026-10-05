@@ -21,6 +21,11 @@ from app.models.enums import VisitorCategory
 from app.models.sync import SyncOperation
 from app.models.visit import Visit
 from app.models.visitor import Visitor
+from app.origin import (
+    PRE_BOOKED_LABEL,
+    WALK_IN_LABEL,
+    prebooked_visitor_ids,
+)
 
 
 @dataclass
@@ -33,6 +38,12 @@ class Count:
 class CurrencyTotal:
     currency: str
     amount_minor: int
+
+
+@dataclass
+class OriginRevenue:
+    origin: str  # "Pre-booked" | "Walk-in"
+    totals: list[CurrencyTotal] = field(default_factory=list)
 
 
 @dataclass
@@ -53,8 +64,10 @@ class Dashboard:
     by_category: list[Count] = field(default_factory=list)
     by_activity: list[Count] = field(default_factory=list)
     by_lodge: list[Count] = field(default_factory=list)
+    by_origin: list[Count] = field(default_factory=list)
     revenue: list[CurrencyTotal] = field(default_factory=list)
     revenue_today: list[CurrencyTotal] = field(default_factory=list)
+    revenue_by_origin: list[OriginRevenue] = field(default_factory=list)
     stations: list[StationSync] = field(default_factory=list)
     alert_counts: list[Count] = field(default_factory=list)
 
@@ -137,6 +150,42 @@ def build_dashboard(db: Session, now: datetime | None = None) -> Dashboard:
         ).all()
     ]
 
+    # Walk-in vs pre-booked split (supervisor priority: distinguish origins and
+    # include both in statistics and revenue). A visitor is pre-booked when a
+    # booking was matched to them; everyone else who entered is a walk-in.
+    prebooked = prebooked_visitor_ids(db)
+
+    inside_visitor_ids = db.scalars(
+        select(Visit.visitor_id).where(Visit.exit_timestamp.is_(None))
+    ).all()
+    pre_inside = sum(1 for vid in inside_visitor_ids if vid in prebooked)
+    by_origin = [
+        Count(label=PRE_BOOKED_LABEL, count=pre_inside),
+        Count(label=WALK_IN_LABEL, count=len(inside_visitor_ids) - pre_inside),
+    ]
+
+    rev_pre: dict[str, int] = {}
+    rev_walk: dict[str, int] = {}
+    for vid, currency, total in db.execute(
+        select(
+            VisitorActivity.visitor_id,
+            VisitorActivity.currency,
+            func.sum(VisitorActivity.amount_minor),
+        ).group_by(VisitorActivity.visitor_id, VisitorActivity.currency)
+    ).all():
+        bucket = rev_pre if vid in prebooked else rev_walk
+        bucket[currency] = bucket.get(currency, 0) + int(total or 0)
+    revenue_by_origin = [
+        OriginRevenue(
+            origin=PRE_BOOKED_LABEL,
+            totals=[CurrencyTotal(currency=c, amount_minor=a) for c, a in sorted(rev_pre.items())],
+        ),
+        OriginRevenue(
+            origin=WALK_IN_LABEL,
+            totals=[CurrencyTotal(currency=c, amount_minor=a) for c, a in sorted(rev_walk.items())],
+        ),
+    ]
+
     # Average completed stay, in hours, over visits that have exited.
     avg_stay_seconds = 0.0
     durations = db.execute(
@@ -190,8 +239,10 @@ def build_dashboard(db: Session, now: datetime | None = None) -> Dashboard:
         by_category=by_category,
         by_activity=by_activity,
         by_lodge=by_lodge,
+        by_origin=by_origin,
         revenue=revenue,
         revenue_today=revenue_today,
+        revenue_by_origin=revenue_by_origin,
         stations=stations,
         alert_counts=alert_counts,
     )

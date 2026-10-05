@@ -25,6 +25,7 @@ from app.schemas import (
     CountOut,
     CurrencyTotal,
     DashboardOut,
+    OriginRevenueOut,
     ReportOut,
     ReportRowOut,
     RetentionResultOut,
@@ -53,8 +54,16 @@ def get_dashboard(
         by_category=[CountOut(label=c.label, count=c.count) for c in board.by_category],
         by_activity=[CountOut(label=c.label, count=c.count) for c in board.by_activity],
         by_lodge=[CountOut(label=c.label, count=c.count) for c in board.by_lodge],
+        by_origin=[CountOut(label=c.label, count=c.count) for c in board.by_origin],
         revenue=[CurrencyTotal(currency=r.currency, amount_minor=r.amount_minor) for r in board.revenue],
         revenue_today=[CurrencyTotal(currency=r.currency, amount_minor=r.amount_minor) for r in board.revenue_today],
+        revenue_by_origin=[
+            OriginRevenueOut(
+                origin=o.origin,
+                totals=[CurrencyTotal(currency=t.currency, amount_minor=t.amount_minor) for t in o.totals],
+            )
+            for o in board.revenue_by_origin
+        ],
         stations=[
             StationSyncOut(station_id=s.station_id, last_sync_at=s.last_sync_at, operations=s.operations)
             for s in board.stations
@@ -148,10 +157,20 @@ def _report_out(report) -> ReportOut:
                 period=row.period,
                 visitors_registered=row.visitors_registered,
                 entries=row.entries,
+                pre_booked=row.pre_booked,
+                walk_in=row.walk_in,
                 activities=row.activities,
                 revenue=[
                     CurrencyTotal(currency=cur, amount_minor=amt)
                     for cur, amt in sorted(row.revenue.items())
+                ],
+                revenue_pre_booked=[
+                    CurrencyTotal(currency=cur, amount_minor=amt)
+                    for cur, amt in sorted(row.revenue_pre_booked.items())
+                ],
+                revenue_walk_in=[
+                    CurrencyTotal(currency=cur, amount_minor=amt)
+                    for cur, amt in sorted(row.revenue_walk_in.items())
                 ],
             )
             for row in report.rows

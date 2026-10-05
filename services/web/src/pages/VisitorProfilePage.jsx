@@ -271,6 +271,14 @@ export default function VisitorProfilePage({ visitor, onBack, onScanQr }) {
       }
     : statusPill;
 
+  // Walk-in vs pre-booked origin (supervisor priority 3), server-derived.
+  const originBadge =
+    serverStatus?.origin === "pre_booked"
+      ? { text: "Pre-booked", cls: "active", icon: "bi-calendar-check" }
+      : serverStatus?.origin === "walk_in"
+        ? { text: "Walk-in", cls: "neutral", icon: "bi-person-walking" }
+        : null;
+
   async function onRecordExit() {
     if (!openVisit) return;
     setExiting(true);
@@ -328,6 +336,11 @@ export default function VisitorProfilePage({ visitor, onBack, onScanQr }) {
               <span className={"pill " + lifecyclePill.cls}>
                 <i className={"bi " + lifecyclePill.icon} /> {lifecyclePill.text}
               </span>
+              {originBadge && (
+                <span className={"pill " + originBadge.cls}>
+                  <i className={"bi " + originBadge.icon} /> {originBadge.text}
+                </span>
+              )}
             </div>
             <div className="vp__name">{visitor.full_name}</div>
             <div className="vp__nat">
