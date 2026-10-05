@@ -17,18 +17,34 @@ function CardGrid({ items }) {
     <div className="row g-3">
       {items.map((it) => (
         <div className="col-sm-6 col-lg-4" key={it.name}>
-          <div className="data-row h-100 align-items-start">
-            <span className="d-flex align-items-start gap-2">
-              {it.icon ? <i className={"bi " + it.icon} style={{ color: "var(--vmis-green-600)" }} /> : null}
-              <span>
-                <span className="d-block fw-semibold" style={{ color: "var(--vmis-ink)" }}>
-                  {it.name}
+          <div className="info-card h-100">
+            {it.image ? (
+              <div className="info-card__media">
+                <img
+                  src={it.image}
+                  alt={it.name}
+                  loading="lazy"
+                  onError={(e) => {
+                    // A broken photo URL must never break the layout: drop the
+                    // media band and let the icon + text stand on their own.
+                    e.currentTarget.parentElement.remove();
+                  }}
+                />
+              </div>
+            ) : null}
+            <div className="info-card__body">
+              <span className="d-flex align-items-start gap-2">
+                {it.icon ? <i className={"bi " + it.icon} style={{ color: "var(--vmis-green-600)" }} /> : null}
+                <span>
+                  <span className="d-block fw-semibold" style={{ color: "var(--vmis-ink)" }}>
+                    {it.name}
+                  </span>
+                  {it.note ? (
+                    <span className="muted" style={{ fontSize: "0.85rem" }}>{it.note}</span>
+                  ) : null}
                 </span>
-                {it.note ? (
-                  <span className="muted" style={{ fontSize: "0.85rem" }}>{it.note}</span>
-                ) : null}
               </span>
-            </span>
+            </div>
           </div>
         </div>
       ))}
@@ -60,24 +76,36 @@ export default function TouristInfoPage() {
         subtitle="Murchison Falls National Park — what to see, do, and know"
       />
 
-      <div className="surface-card p-4 mb-3">
-        <div className="card-title-row">
-          <i className="bi bi-tree" />
-          <h3>{PARK_OVERVIEW.name}</h3>
-        </div>
-        <p style={{ color: "var(--vmis-ink)", fontWeight: 500 }}>{PARK_OVERVIEW.tagline}</p>
-        <p className="muted">{PARK_OVERVIEW.summary}</p>
-        <div className="row g-3 mt-1">
-          {PARK_OVERVIEW.facts.map((f) => (
-            <div className="col-6 col-md-4 col-xl" key={f.label}>
-              <div className="stat-card">
-                <div>
-                  <div className="stat-card__label">{f.label}</div>
-                  <div className="stat-card__value" style={{ fontSize: "1.1rem" }}>{f.value}</div>
+      <div className="surface-card p-0 mb-3 overflow-hidden">
+        {PARK_OVERVIEW.image ? (
+          <div className="info-banner">
+            <img
+              src={PARK_OVERVIEW.image}
+              alt={PARK_OVERVIEW.name}
+              loading="lazy"
+              onError={(e) => e.currentTarget.parentElement.remove()}
+            />
+          </div>
+        ) : null}
+        <div className="p-4">
+          <div className="card-title-row">
+            <i className="bi bi-tree" />
+            <h3>{PARK_OVERVIEW.name}</h3>
+          </div>
+          <p style={{ color: "var(--vmis-ink)", fontWeight: 500 }}>{PARK_OVERVIEW.tagline}</p>
+          <p className="muted">{PARK_OVERVIEW.summary}</p>
+          <div className="row g-3 mt-1">
+            {PARK_OVERVIEW.facts.map((f) => (
+              <div className="col-6 col-md-4 col-xl" key={f.label}>
+                <div className="stat-card">
+                  <div>
+                    <div className="stat-card__label">{f.label}</div>
+                    <div className="stat-card__value" style={{ fontSize: "1.1rem" }}>{f.value}</div>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
+          </div>
         </div>
       </div>
 

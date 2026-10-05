@@ -1,6 +1,7 @@
 import { Link } from "react-router-dom";
 
 import TouristInfoPage from "./TouristInfoPage.jsx";
+import { HERO_IMAGE } from "../domain/parkInfo.js";
 
 // The public landing: explore the park freely, then a clear call to create an
 // account and book. The information itself is the same content officers and
@@ -8,7 +9,13 @@ import TouristInfoPage from "./TouristInfoPage.jsx";
 export default function PublicParkInfoPage() {
   return (
     <>
-      <div className="public-hero">
+      <div
+        className="public-hero public-hero--photo"
+        style={{
+          backgroundImage:
+            `linear-gradient(135deg, rgba(21,99,63,0.82), rgba(12,74,44,0.82)), url(${HERO_IMAGE})`,
+        }}
+      >
         <div>
           <h1>Plan your visit to Murchison Falls</h1>
           <p>

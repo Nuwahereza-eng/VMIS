@@ -2328,6 +2328,53 @@ table.table { --bs-table-border-color: var(--vmis-line); }
   flex-wrap: wrap;
 }
 
+/* Hero with a photo backdrop: the gradient keeps the white text legible. */
+.public-hero--photo {
+  background-size: cover;
+  background-position: center;
+}
+
+/* Image cards for park info (animals, attractions, activities, lodges). The
+   media band has a fixed aspect so the grid stays tidy regardless of the
+   source photo; if an image fails to load the whole band is removed and the
+   icon + text card remains. */
+.info-card {
+  display: flex;
+  flex-direction: column;
+  background: var(--vmis-surface, #fff);
+  border: 1px solid var(--vmis-line);
+  border-radius: var(--vmis-radius-sm, 12px);
+  overflow: hidden;
+}
+.info-card__media {
+  aspect-ratio: 16 / 10;
+  background: var(--vmis-bg-2, #eef2f0);
+  overflow: hidden;
+}
+.info-card__media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition: transform 0.3s ease;
+}
+.info-card:hover .info-card__media img { transform: scale(1.04); }
+.info-card__body { padding: 0.85rem 1rem; }
+
+/* Wide banner image on the in-app park overview card. */
+.info-banner {
+  aspect-ratio: 21 / 7;
+  background: var(--vmis-bg-2, #eef2f0);
+  overflow: hidden;
+}
+.info-banner img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+
 
 
 
