@@ -16,7 +16,7 @@ from sqlalchemy import Date, DateTime, Enum, Integer, String, Uuid
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, SyncMixin, TimestampMixin, UUIDPrimaryKeyMixin
-from app.models.enums import BookingStatus, VisitorCategory
+from app.models.enums import BookingStatus, PaymentStatus, VisitorCategory
 
 
 class Booking(UUIDPrimaryKeyMixin, TimestampMixin, SyncMixin, Base):
@@ -53,3 +53,21 @@ class Booking(UUIDPrimaryKeyMixin, TimestampMixin, SyncMixin, Base):
 
     # Officer who captured the booking.
     created_by_id: Mapped[uuid.UUID | None] = mapped_column(Uuid, nullable=True)
+
+    # Payment & ticketing (supervisor priority 5). Entry fee is quoted from the
+    # category + party size; amount/currency are integer minor units. A booking
+    # is UNPAID until a (simulated) payment succeeds, which records the method,
+    # a payment reference, the paid timestamp, and mints a unique ticket code
+    # that backs the visitor's QR ticket.
+    amount_minor: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    currency: Mapped[str | None] = mapped_column(String(3), nullable=True)
+    payment_status: Mapped[PaymentStatus] = mapped_column(
+        Enum(PaymentStatus, native_enum=False, length=8),
+        default=PaymentStatus.UNPAID,
+        nullable=False,
+        index=True,
+    )
+    payment_method: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    payment_reference: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
+    ticket_code: Mapped[str | None] = mapped_column(String(32), nullable=True, unique=True, index=True)

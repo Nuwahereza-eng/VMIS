@@ -6,7 +6,14 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from app.models.enums import BookingStatus, Role, ScanKind, VisitorCategory, VisitorStatus
+from app.models.enums import (
+    BookingStatus,
+    PaymentStatus,
+    Role,
+    ScanKind,
+    VisitorCategory,
+    VisitorStatus,
+)
 
 
 class Token(BaseModel):
@@ -473,6 +480,28 @@ class BookingOut(BaseModel):
     visitor_id: uuid.UUID | None
     arrived_at: datetime | None
     created_at: datetime
+
+    # Payment & ticketing (supervisor priority 5).
+    amount_minor: int | None
+    currency: str | None
+    payment_status: PaymentStatus
+    payment_method: str | None
+    payment_reference: str | None
+    paid_at: datetime | None
+    ticket_code: str | None
+
+
+class BookingPay(BaseModel):
+    """Simulated payment for a booking's entry fee.
+
+    No external gateway is called; the payment always succeeds and the server
+    mints a ticket. ``method`` records how the visitor chose to pay so revenue
+    can be broken down by channel.
+    """
+
+    method: Literal["mobile_money", "card", "cash"] = "mobile_money"
+    # Optional payer detail shown on the receipt (e.g. a masked phone/card).
+    payer_reference: str | None = Field(default=None, max_length=64)
 
 
 class ExpectedDay(BaseModel):

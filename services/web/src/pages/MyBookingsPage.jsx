@@ -3,8 +3,10 @@ import { Link } from "react-router-dom";
 
 import { useApp } from "../context/AppContext.jsx";
 import PageHeader from "../components/PageHeader.jsx";
+import PaymentPanel from "../components/PaymentPanel.jsx";
+import BookingTicket from "../components/BookingTicket.jsx";
 import { cancelBooking, getMyBookings } from "../api/client.js";
-import { CATEGORIES } from "../domain/categories.js";
+import { CATEGORIES, formatMinor } from "../domain/categories.js";
 
 const CATEGORY_LABEL = Object.fromEntries(CATEGORIES.map((c) => [c.code, c.label]));
 
@@ -33,6 +35,8 @@ export default function MyBookingsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [busyId, setBusyId] = useState(null);
+  // When set, show a modal: mode "pay" collects payment, "ticket" shows the QR.
+  const [modal, setModal] = useState(null); // { mode, booking }
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -64,6 +68,10 @@ export default function MyBookingsPage() {
     } finally {
       setBusyId(null);
     }
+  }
+
+  function closeModal() {
+    setModal(null);
   }
 
   return (
@@ -107,6 +115,8 @@ export default function MyBookingsPage() {
           {bookings.map((b) => {
             const meta = STATUS_META[b.status] || STATUS_META.pending;
             const canCancel = b.status === "pending";
+            const isPaid = b.payment_status === "paid";
+            const canPay = !isPaid && b.status === "pending";
             return (
               <div className="col-md-6 col-xl-4" key={b.id}>
                 <div className="surface-card p-4 h-100 d-flex flex-column">
@@ -145,12 +155,46 @@ export default function MyBookingsPage() {
                         <span>{b.accommodation}</span>
                       </div>
                     )}
+                    <div className="data-row">
+                      <span className="muted">Entry fee</span>
+                      <span>
+                        {b.amount_minor != null
+                          ? formatMinor(b.amount_minor, b.currency)
+                          : "—"}
+                      </span>
+                    </div>
+                    <div className="data-row">
+                      <span className="muted">Payment</span>
+                      <span className={"pill " + (isPaid ? "green" : "gold")}>
+                        <i className={"bi " + (isPaid ? "bi-patch-check-fill" : "bi-hourglass")} />{" "}
+                        {isPaid ? "Paid" : "Unpaid"}
+                      </span>
+                    </div>
                   </div>
-                  {canCancel && (
-                    <div className="mt-3">
+
+                  <div className="mt-3 d-grid gap-2">
+                    {canPay && (
                       <button
                         type="button"
-                        className="btn btn-outline-danger btn-sm w-100"
+                        className="btn btn-success btn-sm"
+                        onClick={() => setModal({ mode: "pay", booking: b })}
+                      >
+                        <i className="bi bi-credit-card" /> Pay entry fee
+                      </button>
+                    )}
+                    {isPaid && (
+                      <button
+                        type="button"
+                        className="btn btn-outline-success btn-sm"
+                        onClick={() => setModal({ mode: "ticket", booking: b })}
+                      >
+                        <i className="bi bi-ticket-perforated" /> View ticket
+                      </button>
+                    )}
+                    {canCancel && (
+                      <button
+                        type="button"
+                        className="btn btn-outline-danger btn-sm"
                         onClick={() => onCancel(b)}
                         disabled={busyId === b.id}
                       >
@@ -164,12 +208,65 @@ export default function MyBookingsPage() {
                           </>
                         )}
                       </button>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
               </div>
             );
           })}
+        </div>
+      )}
+
+      {modal && (
+        <div className="vmis-modal-backdrop" onClick={closeModal}>
+          <div
+            className="vmis-modal"
+            role="dialog"
+            aria-modal="true"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="vmis-modal__head">
+              <h3 className="mb-0">
+                {modal.mode === "pay" ? "Pay entry fee" : "Your ticket"}
+              </h3>
+              <button
+                type="button"
+                className="btn-close"
+                aria-label="Close"
+                onClick={closeModal}
+              />
+            </div>
+            <div className="vmis-modal__body">
+              {modal.mode === "pay" ? (
+                <>
+                  <div className="mb-3">
+                    <div className="fw-semibold" style={{ color: "var(--vmis-ink)" }}>
+                      {modal.booking.full_name}
+                    </div>
+                    <div className="muted small">
+                      {modal.booking.party_size} visitor
+                      {modal.booking.party_size > 1 ? "s" : ""}
+                      {" · "}
+                      {formatDate(modal.booking.intended_date)}
+                    </div>
+                  </div>
+                  <PaymentPanel
+                    booking={modal.booking}
+                    token={token}
+                    online={online}
+                    onPaid={(paid) => {
+                      setBookings((rows) =>
+                        rows.map((r) => (r.id === paid.id ? paid : r)),
+                      );
+                      setModal({ mode: "ticket", booking: paid });
+                    }}
+                  />
+                </>
+              ) : (
+                <BookingTicket booking={modal.booking} />
+              )}
+            </div>
+          </div>
         </div>
       )}
     </>

@@ -2378,6 +2378,147 @@ table.table { --bs-table-border-color: var(--vmis-line); }
   display: block;
 }
 
+/* --- Booking payment (supervisor priority 5) --- */
+.payment-panel__amount {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 0.85rem 1rem;
+  margin-bottom: 1rem;
+  background: var(--vmis-green-50, #f2f9f5);
+  border: 1px solid var(--vmis-line);
+  border-radius: var(--vmis-radius-sm, 12px);
+}
+.payment-panel__figure {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: var(--vmis-green-700);
+}
+.payment-panel__methods {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.payment-method {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 0.7rem 0.4rem;
+  border: 1px solid var(--vmis-line);
+  border-radius: var(--vmis-radius-sm, 12px);
+  cursor: pointer;
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--vmis-body);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+.payment-method i { font-size: 1.25rem; }
+.payment-method input { display: none; }
+.payment-method.is-selected {
+  border-color: var(--vmis-green-500);
+  background: var(--vmis-green-50, #f2f9f5);
+  color: var(--vmis-green-700);
+  font-weight: 600;
+}
+
+/* --- Digital ticket (supervisor priority 5/6) --- */
+.booking-ticket {
+  display: flex;
+  flex-direction: column;
+}
+.booking-ticket__top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+}
+.booking-ticket__brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.booking-ticket__brand i {
+  font-size: 1.6rem;
+  color: var(--vmis-green-600);
+}
+.booking-ticket__park {
+  font-weight: 700;
+  color: var(--vmis-ink);
+  line-height: 1.1;
+}
+.booking-ticket__kind {
+  font-size: 0.8rem;
+  color: var(--vmis-muted);
+}
+.booking-ticket__qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+  border: 1px dashed var(--vmis-line);
+  border-radius: var(--vmis-radius-sm, 12px);
+  margin-bottom: 1rem;
+}
+.booking-ticket__qr img {
+  width: 200px;
+  height: 200px;
+  max-width: 100%;
+}
+.booking-ticket__qr-fallback {
+  font-size: 5rem;
+  color: var(--vmis-muted);
+}
+.booking-ticket__code {
+  margin-top: 0.75rem;
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-size: 1.15rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--vmis-ink);
+}
+.booking-ticket__hint { font-size: 0.8rem; }
+.booking-ticket__pay {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid var(--vmis-line);
+}
+
+/* --- Lightweight modal (used for pay / view-ticket from My Bookings) --- */
+.vmis-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(12, 27, 20, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 1050;
+}
+.vmis-modal {
+  background: var(--vmis-surface, #fff);
+  border-radius: var(--vmis-radius, 16px);
+  width: 100%;
+  max-width: 28rem;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+.vmis-modal__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.25rem;
+  border-bottom: 1px solid var(--vmis-line);
+}
+.vmis-modal__head h3 {
+  font-size: 1.15rem;
+  color: var(--vmis-ink);
+}
+.vmis-modal__body { padding: 1.25rem; }
+
+
 
 
 

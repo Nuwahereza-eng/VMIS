@@ -59,6 +59,19 @@ class BookingStatus(str, enum.Enum):
     NO_SHOW = "no_show"  # intended date passed with no arrival
 
 
+class PaymentStatus(str, enum.Enum):
+    """Whether a booking's entry fee has been paid (supervisor priority 5).
+
+    A booking is captured ``UNPAID``; a successful payment flips it to ``PAID``
+    and mints the digital ticket. Payment is simulated for now (no external
+    gateway), but the records (amount, method, reference, ticket code) are real
+    and feed revenue reconciliation.
+    """
+
+    UNPAID = "unpaid"
+    PAID = "paid"
+
+
 # Currency each category is billed in (build prompt Table 1). The three foreign
 # categories pay in USD; East African Citizens pay in UGX.
 CATEGORY_CURRENCY: dict[VisitorCategory, str] = {

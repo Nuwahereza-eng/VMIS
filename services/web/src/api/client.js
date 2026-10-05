@@ -292,6 +292,17 @@ export async function cancelBooking(token, bookingId) {
   return parse(res);
 }
 
+// Pay a booking's entry fee (simulated) and mint its ticket. Tourists may only
+// pay their own. Returns the updated booking with ticket_code + payment details.
+export async function payBooking(token, bookingId, { method = "mobile_money", payerReference } = {}) {
+  const res = await fetch(apiUrl(`/bookings/${bookingId}/pay`), {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify({ method, payer_reference: payerReference ?? null }),
+  });
+  return parse(res);
+}
+
 // Expected (not-yet-arrived) visitors grouped per day, for management.
 export async function getExpectedSummary(token, { dateFrom, dateTo } = {}) {
   const params = new URLSearchParams();

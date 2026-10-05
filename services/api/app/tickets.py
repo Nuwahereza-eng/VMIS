@@ -6,13 +6,39 @@
 Both the status and the remaining time are derived on every call and never
 persisted, so a station with a wrong local clock cannot corrupt a stored expiry.
 All arithmetic is done in timezone-aware UTC.
+
+This module also mints the short, random codes that identify a paid booking's
+digital ticket and its payment receipt (supervisor priority 5/6).
 """
 
 import enum
+import secrets
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 from app.models.base import ensure_utc, utcnow
+
+
+# Unambiguous alphabet (no 0/O, 1/I) for codes a person might read aloud.
+_CODE_ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+
+
+def _code_token(length: int) -> str:
+    return "".join(secrets.choice(_CODE_ALPHABET) for _ in range(length))
+
+
+def make_ticket_code() -> str:
+    """A park ticket code, e.g. ``MF-7K2PQX9T``.
+
+    Uniqueness is also enforced by a database constraint; the randomness here
+    just makes collisions astronomically unlikely.
+    """
+    return f"MF-{_code_token(8)}"
+
+
+def make_payment_reference() -> str:
+    """A payment receipt reference, e.g. ``PAY-9QX7K2P4R6``."""
+    return f"PAY-{_code_token(10)}"
 
 
 class TicketStatus(str, enum.Enum):

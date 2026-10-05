@@ -3,6 +3,8 @@ import { Link } from "react-router-dom";
 
 import { useApp } from "../context/AppContext.jsx";
 import PageHeader from "../components/PageHeader.jsx";
+import PaymentPanel from "../components/PaymentPanel.jsx";
+import BookingTicket from "../components/BookingTicket.jsx";
 import { createBooking } from "../api/client.js";
 import { CATEGORIES } from "../domain/categories.js";
 import { GATES, LODGES } from "../domain/reference.js";
@@ -27,13 +29,19 @@ function emptyForm(session) {
   };
 }
 
+// Three steps: fill the form -> pay the entry fee -> see the QR ticket.
+const STEP_FORM = "form";
+const STEP_PAY = "pay";
+const STEP_TICKET = "ticket";
+
 export default function BookVisitPage() {
   const { session, online } = useApp();
   const token = session.token;
 
   const [form, setForm] = useState(() => emptyForm(session));
+  const [step, setStep] = useState(STEP_FORM);
+  const [booking, setBooking] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [done, setDone] = useState(false);
   const [error, setError] = useState(null);
 
   function set(field, value) {
@@ -58,8 +66,9 @@ export default function BookVisitPage() {
         accommodation: form.accommodation || null,
         notes: form.notes.trim() || null,
       };
-      await createBooking(token, payload);
-      setDone(true);
+      const created = await createBooking(token, payload);
+      setBooking(created);
+      setStep(STEP_PAY);
     } catch (err) {
       setError(err?.message || "Could not submit your booking. Please try again.");
     } finally {
@@ -69,40 +78,84 @@ export default function BookVisitPage() {
 
   function bookAnother() {
     setForm(emptyForm(session));
-    setDone(false);
+    setBooking(null);
     setError(null);
+    setStep(STEP_FORM);
   }
 
-  if (done) {
+  // --- Step 3: paid, show the ticket ---
+  if (step === STEP_TICKET && booking) {
     return (
       <>
         <PageHeader
-          icon="bi-calendar-plus"
-          title="Book a visit"
-          subtitle="Plan your trip to Murchison Falls and reserve your entry"
+          icon="bi-ticket-perforated"
+          title="Your ticket is ready"
+          subtitle="Payment received — show this QR code at the park entrance"
         />
-        <div className="surface-card p-4 text-center">
-          <div className="mb-3" style={{ fontSize: "2.5rem", color: "var(--vmis-green-600)" }}>
-            <i className="bi bi-check-circle-fill" />
-          </div>
-          <h3 style={{ color: "var(--vmis-ink)" }}>Booking submitted</h3>
-          <p className="muted mb-4">
-            Your visit has been recorded. You'll receive reminders before your
-            trip, and you can review or cancel it any time under My Bookings.
-          </p>
-          <div className="d-flex gap-2 justify-content-center">
-            <Link to="/my-bookings" className="btn btn-success">
-              <i className="bi bi-journal-check" /> View my bookings
-            </Link>
-            <button type="button" className="btn btn-outline-success" onClick={bookAnother}>
-              <i className="bi bi-plus-lg" /> Book another visit
-            </button>
+        <div className="row g-3 justify-content-center">
+          <div className="col-md-7 col-lg-5">
+            <div className="surface-card p-4">
+              <BookingTicket booking={booking} />
+            </div>
+            <div className="d-flex gap-2 justify-content-center mt-3">
+              <Link to="/my-bookings" className="btn btn-success">
+                <i className="bi bi-journal-check" /> My bookings
+              </Link>
+              <button type="button" className="btn btn-outline-success" onClick={bookAnother}>
+                <i className="bi bi-plus-lg" /> Book another visit
+              </button>
+            </div>
           </div>
         </div>
       </>
     );
   }
 
+  // --- Step 2: pay the entry fee ---
+  if (step === STEP_PAY && booking) {
+    return (
+      <>
+        <PageHeader
+          icon="bi-credit-card"
+          title="Pay your entry fee"
+          subtitle="Secure your booking by paying the park entry fee"
+        />
+        <div className="row g-3 justify-content-center">
+          <div className="col-md-7 col-lg-5">
+            <div className="surface-card p-4">
+              <div className="mb-3">
+                <div className="fw-semibold" style={{ color: "var(--vmis-ink)" }}>
+                  {booking.full_name}
+                </div>
+                <div className="muted small">
+                  {booking.party_size} visitor{booking.party_size > 1 ? "s" : ""}
+                  {booking.category ? ` · ${booking.category}` : ""}
+                  {" · "}
+                  {new Date(booking.intended_date + "T00:00:00").toLocaleDateString()}
+                </div>
+              </div>
+              <PaymentPanel
+                booking={booking}
+                token={token}
+                online={online}
+                onPaid={(paid) => {
+                  setBooking(paid);
+                  setStep(STEP_TICKET);
+                }}
+              />
+            </div>
+            <div className="text-center mt-3">
+              <Link to="/my-bookings" className="btn btn-link text-muted">
+                Pay later — I'll finish from My Bookings
+              </Link>
+            </div>
+          </div>
+        </div>
+      </>
+    );
+  }
+
+  // --- Step 1: the booking form ---
   return (
     <>
       <PageHeader
@@ -176,6 +229,7 @@ export default function BookVisitPage() {
                 className="form-select"
                 value={form.category}
                 onChange={(e) => set("category", e.target.value)}
+                required
               >
                 <option value="">Select…</option>
                 {CATEGORIES.map((c) => (
@@ -184,6 +238,7 @@ export default function BookVisitPage() {
                   </option>
                 ))}
               </select>
+              <div className="form-text">Determines your entry fee.</div>
             </div>
             <div className="col-md-4">
               <label className="form-label">Nights staying</label>
@@ -252,7 +307,7 @@ export default function BookVisitPage() {
             </div>
           </div>
 
-          <div className="mt-4 d-flex gap-2">
+          <div className="mt-4 d-flex gap-2 align-items-center">
             <button className="btn btn-success" disabled={saving || !online}>
               {saving ? (
                 <>
@@ -260,7 +315,7 @@ export default function BookVisitPage() {
                 </>
               ) : (
                 <>
-                  <i className="bi bi-calendar-check" /> Submit booking
+                  <i className="bi bi-arrow-right-circle" /> Continue to payment
                 </>
               )}
             </button>
