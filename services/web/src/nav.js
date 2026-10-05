@@ -115,6 +115,13 @@ export const NAV_ITEMS = [
     showOutbox: true,
   },
   {
+    to: "/park-info",
+    label: "Park Info",
+    icon: "bi-signpost-2",
+    title: "Tourist information",
+    subtitle: "Murchison Falls National Park — what to see, do, and know",
+  },
+  {
     to: "/settings",
     label: "Settings",
     icon: "bi-gear",
