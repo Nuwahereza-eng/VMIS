@@ -2315,12 +2315,16 @@ table.table { --bs-table-border-color: var(--vmis-line); }
 .public-hero h1 {
   font-weight: 800;
   margin-bottom: 0.5rem;
-  font-size: clamp(1.5rem, 3vw, 2.1rem);
+  font-size: clamp(1.6rem, 3.2vw, 2.3rem);
+  letter-spacing: -0.01em;
+  color: var(--vmis-gold-500);
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.35);
 }
 .public-hero p {
   margin-bottom: 1.25rem;
   max-width: 48rem;
-  opacity: 0.92;
+  opacity: 0.95;
+  text-shadow: 0 1px 6px rgba(0, 0, 0, 0.3);
 }
 .public-hero__actions {
   display: flex;
