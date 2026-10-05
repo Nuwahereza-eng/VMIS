@@ -288,6 +288,12 @@ export async function getAlerts(token) {
   return parse(res);
 }
 
+// Management-only cross-gate revenue and visitor reconciliation.
+export async function getReconciliation(token) {
+  const res = await fetch(apiUrl("/management/reconciliation"), { headers: authHeaders(token) });
+  return parse(res);
+}
+
 // Management-only user administration.
 export async function getUsers(token) {
   const res = await fetch(apiUrl("/users"), { headers: authHeaders(token) });

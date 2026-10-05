@@ -91,6 +91,14 @@ export const NAV_ITEMS = [
     roles: ["management"],
   },
   {
+    to: "/reconciliation",
+    label: "Reconciliation",
+    icon: "bi-bank",
+    title: "Gate reconciliation",
+    subtitle: "Reconcile visitor numbers and revenue across every entry gate",
+    roles: ["management"],
+  },
+  {
     to: "/sync",
     label: "Sync Status",
     icon: "bi-arrow-repeat",

@@ -18,6 +18,7 @@ from app.db import get_db
 from app.models.enums import Role
 from app.models.user import User
 from app.rbac import require_roles
+from app.reconciliation import build_reconciliation
 from app.reports import Granularity, build_report, report_to_csv
 from app.retention import enforce_retention
 from app.schemas import (
@@ -25,7 +26,9 @@ from app.schemas import (
     CountOut,
     CurrencyTotal,
     DashboardOut,
+    GateReconciliationOut,
     OriginRevenueOut,
+    ReconciliationOut,
     ReportOut,
     ReportRowOut,
     RetentionResultOut,
@@ -123,6 +126,40 @@ def get_report_csv(
         content=body,
         media_type="text/csv",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
+
+
+@router.get("/reconciliation", response_model=ReconciliationOut)
+def get_reconciliation(
+    db: Session = Depends(get_db),
+    _: User = Depends(_management),
+) -> ReconciliationOut:
+    data = build_reconciliation(db)
+    return ReconciliationOut(
+        gates=[
+            GateReconciliationOut(
+                gate=g.gate,
+                expected=g.expected,
+                entries=g.entries,
+                distinct_visitors=g.distinct_visitors,
+                inside_now=g.inside_now,
+                exited=g.exited,
+                revenue=[
+                    CurrencyTotal(currency=t.currency, amount_minor=t.amount_minor)
+                    for t in g.revenue
+                ],
+            )
+            for g in data.gates
+        ],
+        totals=[CurrencyTotal(currency=t.currency, amount_minor=t.amount_minor) for t in data.totals],
+        unassigned_revenue=[
+            CurrencyTotal(currency=t.currency, amount_minor=t.amount_minor)
+            for t in data.unassigned_revenue
+        ],
+        total_expected=data.total_expected,
+        total_entries=data.total_entries,
+        total_inside=data.total_inside,
+        total_exited=data.total_exited,
     )
 
 

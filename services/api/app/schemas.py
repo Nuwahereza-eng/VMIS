@@ -608,6 +608,26 @@ class ReportOut(BaseModel):
     rows: list[ReportRowOut]
 
 
+class GateReconciliationOut(BaseModel):
+    gate: str
+    expected: int = 0
+    entries: int = 0
+    distinct_visitors: int = 0
+    inside_now: int = 0
+    exited: int = 0
+    revenue: list[CurrencyTotal] = Field(default_factory=list)
+
+
+class ReconciliationOut(BaseModel):
+    gates: list[GateReconciliationOut] = Field(default_factory=list)
+    totals: list[CurrencyTotal] = Field(default_factory=list)
+    unassigned_revenue: list[CurrencyTotal] = Field(default_factory=list)
+    total_expected: int = 0
+    total_entries: int = 0
+    total_inside: int = 0
+    total_exited: int = 0
+
+
 class RetentionResultOut(BaseModel):
     cutoff: datetime
     redacted: int
