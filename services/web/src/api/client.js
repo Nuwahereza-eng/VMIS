@@ -294,6 +294,12 @@ export async function getReconciliation(token) {
   return parse(res);
 }
 
+// Management-only visit reminders (one week / one day before) and upcoming visits.
+export async function getReminders(token) {
+  const res = await fetch(apiUrl("/management/reminders"), { headers: authHeaders(token) });
+  return parse(res);
+}
+
 // Management-only user administration.
 export async function getUsers(token) {
   const res = await fetch(apiUrl("/users"), { headers: authHeaders(token) });

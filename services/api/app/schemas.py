@@ -628,6 +628,30 @@ class ReconciliationOut(BaseModel):
     total_exited: int = 0
 
 
+class ReminderItemOut(BaseModel):
+    booking_id: str
+    full_name: str
+    intended_date: date
+    days_until: int
+    kind: str
+    label: str
+    party_size: int
+    expected_gate: str | None = None
+    country: str | None = None
+    phone: str | None = None
+    email: str | None = None
+    contactable: bool = False
+
+
+class RemindersOut(BaseModel):
+    reference_date: date
+    due_now: list[ReminderItemOut] = Field(default_factory=list)
+    upcoming: list[ReminderItemOut] = Field(default_factory=list)
+    overdue: list[ReminderItemOut] = Field(default_factory=list)
+    week_before_count: int = 0
+    day_before_count: int = 0
+
+
 class RetentionResultOut(BaseModel):
     cutoff: datetime
     redacted: int

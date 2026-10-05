@@ -15,6 +15,7 @@ import VisitsPage from "./pages/VisitsPage.jsx";
 import AlertsPage from "./pages/AlertsPage.jsx";
 import ReportsPage from "./pages/ReportsPage.jsx";
 import ReconciliationPage from "./pages/ReconciliationPage.jsx";
+import RemindersPage from "./pages/RemindersPage.jsx";
 import SyncPage from "./pages/SyncPage.jsx";
 import SettingsPage from "./pages/SettingsPage.jsx";
 import UsersPage from "./pages/UsersPage.jsx";
@@ -57,6 +58,7 @@ export default function App() {
         {allowed.has("/alerts") && <Route path="/alerts" element={<AlertsPage />} />}
         {allowed.has("/reports") && <Route path="/reports" element={<ReportsPage />} />}
         {allowed.has("/reconciliation") && <Route path="/reconciliation" element={<ReconciliationPage />} />}
+        {allowed.has("/reminders") && <Route path="/reminders" element={<RemindersPage />} />}
         <Route path="/sync" element={<SyncPage />} />
         {allowed.has("/settings") && <Route path="/settings" element={<SettingsPage />} />}
         {allowed.has("/users") && <Route path="/users" element={<UsersPage />} />}

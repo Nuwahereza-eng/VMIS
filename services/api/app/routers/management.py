@@ -19,6 +19,7 @@ from app.models.enums import Role
 from app.models.user import User
 from app.rbac import require_roles
 from app.reconciliation import build_reconciliation
+from app.reminders import build_reminders
 from app.reports import Granularity, build_report, report_to_csv
 from app.retention import enforce_retention
 from app.schemas import (
@@ -29,6 +30,8 @@ from app.schemas import (
     GateReconciliationOut,
     OriginRevenueOut,
     ReconciliationOut,
+    ReminderItemOut,
+    RemindersOut,
     ReportOut,
     ReportRowOut,
     RetentionResultOut,
@@ -160,6 +163,39 @@ def get_reconciliation(
         total_entries=data.total_entries,
         total_inside=data.total_inside,
         total_exited=data.total_exited,
+    )
+
+
+def _reminder_out(item) -> ReminderItemOut:
+    return ReminderItemOut(
+        booking_id=item.booking_id,
+        full_name=item.full_name,
+        intended_date=item.intended_date,
+        days_until=item.days_until,
+        kind=item.kind,
+        label=item.label,
+        party_size=item.party_size,
+        expected_gate=item.expected_gate,
+        country=item.country,
+        phone=item.phone,
+        email=item.email,
+        contactable=item.contactable,
+    )
+
+
+@router.get("/reminders", response_model=RemindersOut)
+def get_reminders(
+    db: Session = Depends(get_db),
+    _: User = Depends(_management),
+) -> RemindersOut:
+    data = build_reminders(db)
+    return RemindersOut(
+        reference_date=data.reference_date,
+        due_now=[_reminder_out(i) for i in data.due_now],
+        upcoming=[_reminder_out(i) for i in data.upcoming],
+        overdue=[_reminder_out(i) for i in data.overdue],
+        week_before_count=data.week_before_count,
+        day_before_count=data.day_before_count,
     )
 
 

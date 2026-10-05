@@ -99,6 +99,14 @@ export const NAV_ITEMS = [
     roles: ["management"],
   },
   {
+    to: "/reminders",
+    label: "Reminders",
+    icon: "bi-calendar-event",
+    title: "Visit reminders",
+    subtitle: "Upcoming visits and bookings due a one-week or one-day reminder",
+    roles: ["management"],
+  },
+  {
     to: "/sync",
     label: "Sync Status",
     icon: "bi-arrow-repeat",
