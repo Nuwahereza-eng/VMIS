@@ -2,8 +2,8 @@ import { Navigate, Route, Routes } from "react-router-dom";
 
 import { useApp } from "./context/AppContext.jsx";
 import Layout from "./components/Layout.jsx";
+import PublicApp from "./PublicApp.jsx";
 import { homeForRole, navItemsForRole } from "./nav.js";
-import LoginPage from "./pages/LoginPage.jsx";
 import DashboardPage from "./pages/DashboardPage.jsx";
 import VisitorsPage from "./pages/VisitorsPage.jsx";
 import RegisterPage from "./pages/RegisterPage.jsx";
@@ -22,6 +22,8 @@ import SettingsPage from "./pages/SettingsPage.jsx";
 import UsersPage from "./pages/UsersPage.jsx";
 import ConfigurationPage from "./pages/ConfigurationPage.jsx";
 import BookingsPage from "./pages/BookingsPage.jsx";
+import BookVisitPage from "./pages/BookVisitPage.jsx";
+import MyBookingsPage from "./pages/MyBookingsPage.jsx";
 
 export default function App() {
   const { ready, session } = useApp();
@@ -35,7 +37,7 @@ export default function App() {
   }
 
   if (!session) {
-    return <LoginPage />;
+    return <PublicApp />;
   }
 
   // Only render routes this role is permitted to reach, so a deep-link or a
@@ -52,6 +54,8 @@ export default function App() {
         {allowed.has("/register") && <Route path="/register" element={<RegisterPage />} />}
         {allowed.has("/verify") && <Route path="/verify" element={<VerifyPage />} />}
         {allowed.has("/bookings") && <Route path="/bookings" element={<BookingsPage />} />}
+        {allowed.has("/book") && <Route path="/book" element={<BookVisitPage />} />}
+        {allowed.has("/my-bookings") && <Route path="/my-bookings" element={<MyBookingsPage />} />}
         {allowed.has("/activities") && <Route path="/activities" element={<ActivitiesPage />} />}
         {allowed.has("/accommodation") && <Route path="/accommodation" element={<AccommodationPage />} />}
         {allowed.has("/payments") && <Route path="/payments" element={<PaymentsPage />} />}

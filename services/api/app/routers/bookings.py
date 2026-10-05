@@ -21,13 +21,18 @@ from app.models.booking_request import Booking
 from app.models.enums import BookingStatus, Role
 from app.models.user import User
 from app.models.visitor import Visitor
-from app.rbac import require_roles
+from app.rbac import get_current_user, require_roles
 from app.schemas import BookingCreate, BookingOut, BookingUpdate, ExpectedDay
 
 router = APIRouter(prefix="/bookings", tags=["bookings"])
 
-# Any officer can capture/read bookings; management manages them.
+# Any officer can capture/read bookings; management manages them. Tourists may
+# also create a booking for themselves (self-service), but only see and cancel
+# their own — never the park-wide list.
 _capture_roles = require_roles(Role.GATE_OFFICER, Role.ACTIVITY_OFFICER, Role.MANAGEMENT)
+_create_roles = require_roles(
+    Role.GATE_OFFICER, Role.ACTIVITY_OFFICER, Role.MANAGEMENT, Role.TOURIST
+)
 _read_roles = require_roles(Role.GATE_OFFICER, Role.ACTIVITY_OFFICER, Role.MANAGEMENT)
 
 
@@ -35,7 +40,7 @@ _read_roles = require_roles(Role.GATE_OFFICER, Role.ACTIVITY_OFFICER, Role.MANAG
 def create_booking(
     payload: BookingCreate,
     db: Session = Depends(get_db),
-    officer: User = Depends(_capture_roles),
+    actor: User = Depends(_create_roles),
 ) -> BookingOut:
     booking = Booking(
         id=uuid.uuid4(),
@@ -52,8 +57,8 @@ def create_booking(
         accommodation=payload.accommodation,
         notes=payload.notes,
         status=BookingStatus.PENDING,
-        created_by_id=officer.id,
-        origin_station_id=officer.station_id,
+        created_by_id=actor.id,
+        origin_station_id=actor.station_id,
     )
     db.add(booking)
     db.flush()
@@ -62,10 +67,26 @@ def create_booking(
         action="create",
         entity_type="booking",
         entity_id=str(booking.id),
-        actor_user_id=officer.id,
+        actor_user_id=actor.id,
         details={"intended_date": str(booking.intended_date), "party_size": booking.party_size},
     )
     return BookingOut.model_validate(booking)
+
+
+@router.get("/mine", response_model=list[BookingOut])
+def list_my_bookings(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> list[BookingOut]:
+    """A tourist's own bookings (anything they created), newest intended date
+    first. Scoped to the caller, so it never exposes other visitors' plans."""
+    stmt = (
+        select(Booking)
+        .where(Booking.created_by_id == current_user.id)
+        .order_by(Booking.intended_date.desc(), Booking.created_at.desc())
+    )
+    bookings = db.scalars(stmt).all()
+    return [BookingOut.model_validate(b) for b in bookings]
 
 
 @router.get("", response_model=list[BookingOut])
@@ -164,6 +185,42 @@ def update_booking(
         entity_id=str(booking.id),
         actor_user_id=officer.id,
         details={"status": booking.status.value},
+    )
+    return BookingOut.model_validate(booking)
+
+
+@router.post("/{booking_id}/cancel", response_model=BookingOut)
+def cancel_booking(
+    booking_id: uuid.UUID,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> BookingOut:
+    """Cancel a pending booking. A tourist may cancel only their own booking;
+    officers and management may cancel any. Already-arrived bookings can't be
+    cancelled (the visitor is on-site)."""
+    booking = db.get(Booking, booking_id)
+    if booking is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Booking not found")
+
+    if current_user.role == Role.TOURIST and booking.created_by_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only cancel your own bookings",
+        )
+    if booking.status == BookingStatus.ARRIVED:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="An arrived booking can no longer be cancelled",
+        )
+
+    booking.status = BookingStatus.CANCELLED
+    db.flush()
+    record_audit(
+        db,
+        action="cancel",
+        entity_type="booking",
+        entity_id=str(booking.id),
+        actor_user_id=current_user.id,
     )
     return BookingOut.model_validate(booking)
 

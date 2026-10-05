@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 import { clearSession, isExpired, loadSession, saveSession } from "../auth/session.js";
-import { login as apiLogin } from "../api/client.js";
+import { login as apiLogin, register as apiRegister } from "../api/client.js";
 import { flush, pendingCount } from "../sync/queue.js";
 
 const AppContext = createContext(null);
@@ -51,6 +51,14 @@ export function AppProvider({ children }) {
     return s;
   }, []);
 
+  // Public self-service sign-up: creates a tourist account and signs in.
+  const register = useCallback(async (email, password, fullName) => {
+    const token = await apiRegister(email, password, fullName);
+    const s = await saveSession(token);
+    setSession(s);
+    return s;
+  }, []);
+
   const logout = useCallback(async () => {
     await clearSession();
     setSession(null);
@@ -92,11 +100,12 @@ export function AppProvider({ children }) {
       syncing,
       lastSync,
       login,
+      register,
       logout,
       sync,
       refreshOutbox,
     }),
-    [session, ready, online, outbox, syncing, lastSync, login, logout, sync, refreshOutbox],
+    [session, ready, online, outbox, syncing, lastSync, login, register, logout, sync, refreshOutbox],
   );
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;

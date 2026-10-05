@@ -2227,6 +2227,108 @@ table.table { --bs-table-border-color: var(--vmis-line); }
   font-size: 1.15rem;
 }
 
+/* ---- Public (pre-login) tourist experience ---- */
+.public-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  background: var(--vmis-bg, #f6f8f7);
+}
+
+.public-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1.25rem;
+  background: var(--vmis-surface, #fff);
+  border-bottom: 1px solid var(--vmis-line);
+  flex-wrap: wrap;
+}
+
+.public-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  text-decoration: none;
+}
+.public-brand img { border-radius: 8px; }
+.public-brand__name {
+  display: block;
+  font-weight: 800;
+  color: var(--vmis-ink);
+  line-height: 1.1;
+}
+.public-brand__sub {
+  display: block;
+  font-size: 0.78rem;
+  color: var(--vmis-muted);
+}
+
+.public-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.public-nav__link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: var(--vmis-body);
+  padding: 0.35rem 0.5rem;
+  border-radius: 8px;
+}
+.public-nav__link.active,
+.public-nav__link:hover { color: var(--vmis-green-700); }
+
+.public-main {
+  flex: 1;
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 1.5rem 1.25rem 2.5rem;
+}
+
+.public-footer {
+  text-align: center;
+  padding: 1.25rem;
+  font-size: 0.82rem;
+  color: var(--vmis-muted);
+  border-top: 1px solid var(--vmis-line);
+  background: var(--vmis-surface, #fff);
+}
+
+.public-hero {
+  background: linear-gradient(135deg, var(--vmis-green-700), var(--vmis-green-900, #0c4a2c));
+  color: #fff;
+  border-radius: var(--vmis-radius, 16px);
+  padding: 2.25rem 1.75rem;
+  margin-bottom: 1.25rem;
+}
+.public-hero h1 {
+  font-weight: 800;
+  margin-bottom: 0.5rem;
+  font-size: clamp(1.5rem, 3vw, 2.1rem);
+}
+.public-hero p {
+  margin-bottom: 1.25rem;
+  max-width: 48rem;
+  opacity: 0.92;
+}
+.public-hero__actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+
 
 
 

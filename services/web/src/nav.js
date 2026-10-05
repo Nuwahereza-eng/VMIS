@@ -107,11 +107,28 @@ export const NAV_ITEMS = [
     roles: ["management"],
   },
   {
+    to: "/book",
+    label: "Book a Visit",
+    icon: "bi-calendar-plus",
+    title: "Book a visit",
+    subtitle: "Plan your trip to Murchison Falls and reserve your entry",
+    roles: ["tourist"],
+  },
+  {
+    to: "/my-bookings",
+    label: "My Bookings",
+    icon: "bi-journal-check",
+    title: "My bookings",
+    subtitle: "Your upcoming and past visit bookings",
+    roles: ["tourist"],
+  },
+  {
     to: "/sync",
     label: "Sync Status",
     icon: "bi-arrow-repeat",
     title: "Synchronisation",
     subtitle: "Upload queued work to the central system",
+    roles: ["gate_officer", "activity_officer", "management"],
     showOutbox: true,
   },
   {
@@ -127,6 +144,7 @@ export const NAV_ITEMS = [
     icon: "bi-gear",
     title: "Settings",
     subtitle: "Station, session, and working-mode information",
+    roles: ["gate_officer", "activity_officer", "management"],
   },
   {
     to: "/users",

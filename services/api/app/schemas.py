@@ -4,7 +4,7 @@ import uuid
 from datetime import date, datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 from app.models.enums import BookingStatus, Role, ScanKind, VisitorCategory, VisitorStatus
 
@@ -43,6 +43,26 @@ class UserOut(BaseModel):
     full_name: str | None
     station_id: str | None
     is_active: bool
+
+
+class TouristRegister(BaseModel):
+    """Public self-service sign-up. The account is always a tourist; the role
+    is never taken from the client, so this endpoint can't mint an officer."""
+
+    email: str = Field(min_length=3, max_length=128)
+    password: str = Field(min_length=8, max_length=128)
+    full_name: str = Field(min_length=1, max_length=128)
+
+    @field_validator("email")
+    @classmethod
+    def _normalise_email(cls, value: str) -> str:
+        email = value.strip().lower()
+        # Minimal shape check (no email gateway to verify deliverability). A
+        # single '@' with something on either side and a dot in the domain.
+        local, _, domain = email.partition("@")
+        if not local or "." not in domain or domain.startswith(".") or domain.endswith("."):
+            raise ValueError("Enter a valid email address")
+        return email
 
 
 # --- Sprint 2: registration + identification ---

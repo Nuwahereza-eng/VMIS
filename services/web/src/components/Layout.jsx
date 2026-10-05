@@ -9,6 +9,7 @@ const ROLE_LABELS = {
   management: "Management",
   gate_officer: "Gate officer",
   activity_officer: "Activity officer",
+  tourist: "Tourist",
 };
 
 function initials(name = "") {

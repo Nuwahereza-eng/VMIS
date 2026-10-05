@@ -9,6 +9,10 @@ class Role(str, enum.Enum):
     GATE_OFFICER = "gate_officer"
     ACTIVITY_OFFICER = "activity_officer"
     MANAGEMENT = "management"
+    # Self-service public visitor: explores park info freely, then creates an
+    # account to make and manage their own pre-bookings. Never granted any
+    # officer/management capability (enforced server-side in /auth/register).
+    TOURIST = "tourist"
 
 
 class VisitorCategory(str, enum.Enum):

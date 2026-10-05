@@ -44,6 +44,18 @@ export async function login(username, password) {
   return body.access_token;
 }
 
+// Public self-service sign-up for tourists. Returns a token so the new account
+// is signed straight in. The server fixes the role to "tourist".
+export async function register(email, password, fullName) {
+  const res = await fetch(apiUrl("/auth/register"), {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ email, password, full_name: fullName }),
+  });
+  const body = await parse(res);
+  return body.access_token;
+}
+
 function authHeaders(token) {
   return { Authorization: `Bearer ${token}`, "Content-Type": "application/json" };
 }
@@ -260,6 +272,21 @@ export async function updateBooking(token, bookingId, changes) {
 export async function deleteBooking(token, bookingId) {
   const res = await fetch(apiUrl(`/bookings/${bookingId}`), {
     method: "DELETE",
+    headers: authHeaders(token),
+  });
+  return parse(res);
+}
+
+// A tourist's own bookings (anything they created).
+export async function getMyBookings(token) {
+  const res = await fetch(apiUrl("/bookings/mine"), { headers: authHeaders(token) });
+  return parse(res);
+}
+
+// Cancel a pending booking. Tourists may only cancel their own.
+export async function cancelBooking(token, bookingId) {
+  const res = await fetch(apiUrl(`/bookings/${bookingId}/cancel`), {
+    method: "POST",
     headers: authHeaders(token),
   });
   return parse(res);

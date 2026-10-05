@@ -49,6 +49,7 @@ _DEMO_USERS = [
     ("admin", "change-me-now", "System Administrator", Role.MANAGEMENT, None),
     ("gate1", "gate-pass-1", "Gate Officer (Demo)", Role.GATE_OFFICER, "tangi-gate"),
     ("activity1", "activity-pass-1", "Activity Officer (Demo)", Role.ACTIVITY_OFFICER, "paraa-hq"),
+    ("tourist@example.com", "tourist-pass-1", "Demo Tourist", Role.TOURIST, None),
 ]
 
 

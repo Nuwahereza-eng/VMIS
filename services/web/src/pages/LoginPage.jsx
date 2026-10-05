@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 
 import { useApp } from "../context/AppContext.jsx";
 import { ApiError } from "../api/client.js";
@@ -28,6 +29,14 @@ const DEMO_ROLES = [
     icon: "bi-graph-up-arrow",
     username: "admin",
     password: "change-me-now",
+  },
+  {
+    key: "tourist",
+    label: "Tourist",
+    caption: "Book a visit & manage bookings",
+    icon: "bi-person-walking",
+    username: "tourist@example.com",
+    password: "tourist-pass-1",
   },
 ];
 
@@ -110,7 +119,7 @@ export default function LoginPage() {
             <div className="card-body p-4">
               <h2 className="h4 mb-1">Welcome back</h2>
               <p className="muted mb-4" style={{ fontSize: "0.9rem" }}>
-                Sign in to your officer account to continue.
+                Sign in to your account to continue.
               </p>
 
               {!online && (
@@ -194,6 +203,15 @@ export default function LoginPage() {
                   )}
                 </button>
               </form>
+
+              <p className="text-center muted mt-4 mb-0" style={{ fontSize: "0.9rem" }}>
+                Visiting the park? <Link to="/signup">Create an account</Link>
+              </p>
+              <p className="text-center mt-2 mb-0" style={{ fontSize: "0.85rem" }}>
+                <Link to="/">
+                  <i className="bi bi-arrow-left" /> Explore park information
+                </Link>
+              </p>
             </div>
           </div>
           <p className="text-center muted mt-3" style={{ fontSize: "0.8rem" }}>
