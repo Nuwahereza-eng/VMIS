@@ -32,10 +32,28 @@ async function parse(res) {
   return body;
 }
 
+// fetch with a hard timeout so a crashed/unreachable server can never leave the
+// UI spinning forever. On timeout the request is aborted and surfaced as an
+// ApiError(0) the callers treat as "server unreachable".
+async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  try {
+    return await fetch(url, { ...options, signal: controller.signal });
+  } catch (err) {
+    if (err?.name === "AbortError") {
+      throw new ApiError(0, "The server did not respond. Please try again.");
+    }
+    throw new ApiError(0, "Could not reach the server. Check your connection.");
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 // OAuth2 password grant: /auth/token expects form-encoded credentials.
 export async function login(username, password) {
   const form = new URLSearchParams({ username, password });
-  const res = await fetch(apiUrl("/auth/token"), {
+  const res = await fetchWithTimeout(apiUrl("/auth/token"), {
     method: "POST",
     headers: { "Content-Type": "application/x-www-form-urlencoded" },
     body: form.toString(),
@@ -47,7 +65,7 @@ export async function login(username, password) {
 // Public self-service sign-up for tourists. Returns a token so the new account
 // is signed straight in. The server fixes the role to "tourist".
 export async function register(email, password, fullName) {
-  const res = await fetch(apiUrl("/auth/register"), {
+  const res = await fetchWithTimeout(apiUrl("/auth/register"), {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ email, password, full_name: fullName }),

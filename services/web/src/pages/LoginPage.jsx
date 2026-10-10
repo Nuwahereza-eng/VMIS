@@ -57,6 +57,8 @@ export default function LoginPage() {
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         setError("Invalid username or password.");
+      } else if (err instanceof ApiError && err.status === 0) {
+        setError("Can't reach the server right now. It may be starting up — please try again in a moment.");
       } else {
         setError("Sign-in requires a connection the first time. Please try again online.");
       }
@@ -73,6 +75,8 @@ export default function LoginPage() {
     } catch (err) {
       if (err instanceof ApiError && err.status === 401) {
         setError("Demo account not available on this server.");
+      } else if (err instanceof ApiError && err.status === 0) {
+        setError("Can't reach the server right now. It may be starting up — please try again in a moment.");
       } else {
         setError("Sign-in requires a connection the first time. Please try again online.");
       }

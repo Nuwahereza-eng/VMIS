@@ -37,6 +37,8 @@ export default function SignupPage() {
         setError("An account with this email already exists. Try signing in.");
       } else if (err instanceof ApiError && err.status === 422) {
         setError("Please check your details and enter a valid email address.");
+      } else if (err instanceof ApiError && err.status === 0) {
+        setError("Can't reach the server right now. It may be starting up — please try again in a moment.");
       } else {
         setError("Could not create your account. Please try again online.");
       }
