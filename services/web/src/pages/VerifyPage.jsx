@@ -1,21 +1,51 @@
 import { useState } from "react";
 
+import { useApp } from "../context/AppContext.jsx";
 import QrScanner from "../components/QrScanner.jsx";
+import TicketCheckInPanel from "../components/TicketCheckInPanel.jsx";
+import { getBookingByTicket } from "../api/client.js";
 import { verifyLocal } from "../data/repository.js";
 import VisitorProfilePage from "./VisitorProfilePage.jsx";
 
 // Full-screen "Scan QR Code" experience matching the mockup: a dark top bar,
 // a live camera view with yellow corner framing, and a caption. A manual entry
 // fallback keeps it usable on devices without a camera or when testing offline.
-// A successful scan/lookup opens the visitor's profile.
+// A successful scan/lookup opens the visitor's profile; a booking ticket QR
+// (MF-...) opens the gate check-in / check-out panel instead.
+const TICKET_CODE = /^MF-[A-Z0-9]+$/i;
+
 export default function VerifyPage() {
+  const { session, online } = useApp();
   const [scanning, setScanning] = useState(true);
   const [manual, setManual] = useState("");
   const [visitor, setVisitor] = useState(null);
+  const [ticket, setTicket] = useState(null);
   const [notFound, setNotFound] = useState(false);
+  const [ticketError, setTicketError] = useState(null);
+
+  async function lookupTicket(code) {
+    setTicketError(null);
+    setNotFound(false);
+    if (!online) {
+      setTicketError("Booking tickets are checked against the central system — connect and scan again.");
+      return;
+    }
+    try {
+      setTicket(await getBookingByTicket(session.token, code));
+      setScanning(false);
+    } catch (err) {
+      setTicketError(err?.message || "Could not look up that ticket.");
+    }
+  }
 
   async function lookup(value) {
-    const found = await verifyLocal(String(value).trim());
+    const text = String(value).trim();
+    if (TICKET_CODE.test(text)) {
+      await lookupTicket(text.toUpperCase());
+      return;
+    }
+    setTicketError(null);
+    const found = await verifyLocal(text);
     if (found) {
       setVisitor(found);
       setScanning(false);
@@ -43,6 +73,24 @@ export default function VerifyPage() {
           setScanning(true);
         }}
       />
+    );
+  }
+
+  if (ticket) {
+    return (
+      <div className="fade-in" style={{ maxWidth: "32rem", margin: "0 auto" }}>
+        <TicketCheckInPanel
+          booking={ticket}
+          token={session.token}
+          online={online}
+          stationId={session.stationId}
+          onDone={() => {
+            setTicket(null);
+            setManual("");
+            setScanning(true);
+          }}
+        />
+      </div>
     );
   }
 
@@ -91,6 +139,8 @@ export default function VerifyPage() {
           </div>
         )}
 
+        {ticketError && <div className="alert alert-warning scan__alert">{ticketError}</div>}
+
         <form
           className="scan__manual"
           onSubmit={(e) => {
@@ -100,7 +150,7 @@ export default function VerifyPage() {
         >
           <input
             className="form-control"
-            placeholder="Or enter Visitor ID / code manually"
+            placeholder="Or enter Visitor ID / ticket code manually"
             value={manual}
             onChange={(e) => setManual(e.target.value)}
           />

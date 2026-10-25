@@ -1,21 +1,21 @@
-import { useCallback, useEffect, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 
 import { useApp } from "../context/AppContext.jsx";
 import PageHeader from "../components/PageHeader.jsx";
 import PaymentPanel from "../components/PaymentPanel.jsx";
 import BookingTicket from "../components/BookingTicket.jsx";
-import { cancelBooking, getMyBookings } from "../api/client.js";
+import { cancelBooking } from "../api/client.js";
+import useMyBookings from "../data/useMyBookings.js";
+import useNow from "../data/useNow.js";
 import { CATEGORIES, formatMinor } from "../domain/categories.js";
+import { formatDuration } from "../domain/tickets.js";
+import { LIFECYCLE_META, lifecycleOf } from "../domain/visitLifecycle.js";
 
 const CATEGORY_LABEL = Object.fromEntries(CATEGORIES.map((c) => [c.code, c.label]));
 
-const STATUS_META = {
-  pending: { label: "Expected", cls: "active", icon: "bi-hourglass-split" },
-  arrived: { label: "Arrived", cls: "neutral", icon: "bi-box-arrow-in-right" },
-  cancelled: { label: "Cancelled", cls: "expired", icon: "bi-x-circle" },
-  no_show: { label: "No show", cls: "expired", icon: "bi-dash-circle" },
-};
+// Stages where the live "My visit" screen is the useful place to go.
+const LIVE_STAGES = new Set(["paid", "touring", "expired"]);
 
 function formatDate(iso) {
   if (!iso) return "—";
@@ -31,40 +31,23 @@ export default function MyBookingsPage() {
   const { session, online } = useApp();
   const token = session.token;
 
-  const [bookings, setBookings] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const { bookings, setBookings, loading, error: loadError, reload: load } = useMyBookings();
+  const [actionError, setActionError] = useState(null);
   const [busyId, setBusyId] = useState(null);
   // When set, show a modal: mode "pay" collects payment, "ticket" shows the QR.
   const [modal, setModal] = useState(null); // { mode, booking }
-
-  const load = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const rows = await getMyBookings(token);
-      setBookings(Array.isArray(rows) ? rows : []);
-    } catch (err) {
-      setError(err?.message || "Could not load your bookings.");
-    } finally {
-      setLoading(false);
-    }
-  }, [token]);
-
-  useEffect(() => {
-    if (online) load();
-    else setLoading(false);
-  }, [online, load]);
+  const now = useNow(30 * 1000);
+  const error = actionError || loadError;
 
   async function onCancel(booking) {
     if (!window.confirm("Cancel this booking? This cannot be undone.")) return;
     setBusyId(booking.id);
-    setError(null);
+    setActionError(null);
     try {
       await cancelBooking(token, booking.id);
       await load();
     } catch (err) {
-      setError(err?.message || "Could not cancel the booking.");
+      setActionError(err?.message || "Could not cancel the booking.");
     } finally {
       setBusyId(null);
     }
@@ -89,12 +72,12 @@ export default function MyBookingsPage() {
 
       {!online && (
         <div className="alert alert-warning py-2">
-          You are offline. Connect to see and manage your bookings.
+          You are offline — showing your saved bookings. Connect to pay or cancel.
         </div>
       )}
       {error && <div className="alert alert-danger py-2">{error}</div>}
 
-      {loading ? (
+      {loading && bookings.length === 0 ? (
         <div className="surface-card p-4 text-center muted">Loading…</div>
       ) : bookings.length === 0 ? (
         <div className="empty-state surface-card p-5 text-center">
@@ -113,10 +96,11 @@ export default function MyBookingsPage() {
       ) : (
         <div className="row g-3">
           {bookings.map((b) => {
-            const meta = STATUS_META[b.status] || STATUS_META.pending;
-            const canCancel = b.status === "pending";
+            const life = lifecycleOf(b, now);
+            const meta = LIFECYCLE_META[life.stage] || LIFECYCLE_META.booked;
+            const canCancel = b.status === "pending" && online;
             const isPaid = b.payment_status === "paid";
-            const canPay = !isPaid && b.status === "pending";
+            const canPay = !isPaid && b.status === "pending" && online;
             return (
               <div className="col-md-6 col-xl-4" key={b.id}>
                 <div className="surface-card p-4 h-100 d-flex flex-column">
@@ -125,9 +109,20 @@ export default function MyBookingsPage() {
                       {formatDate(b.intended_date)}
                     </div>
                     <span className={"pill " + meta.cls}>
-                      <i className={"bi " + meta.icon} /> {meta.label}
+                      {life.stage === "touring" ? (
+                        <span className="live-dot" aria-hidden="true" />
+                      ) : (
+                        <i className={"bi " + meta.icon} />
+                      )}{" "}
+                      {meta.label}
                     </span>
                   </div>
+                  {life.stage === "touring" && life.remainingSeconds != null && (
+                    <div className="small mb-2" style={{ color: "var(--vmis-green-700)" }}>
+                      <i className="bi bi-stopwatch" /> {formatDuration(life.remainingSeconds)} remaining
+                      {b.entry_gate ? ` · checked in at ${b.entry_gate}` : ""}
+                    </div>
+                  )}
                   <div className="breakdown-list flex-grow-1">
                     <div className="data-row">
                       <span className="muted">Party size</span>
@@ -173,6 +168,12 @@ export default function MyBookingsPage() {
                   </div>
 
                   <div className="mt-3 d-grid gap-2">
+                    {LIVE_STAGES.has(life.stage) && (
+                      <Link to="/my-visit" className="btn btn-success btn-sm">
+                        <i className="bi bi-compass" />{" "}
+                        {life.stage === "paid" ? "Open live ticket" : "Open my visit"}
+                      </Link>
+                    )}
                     {canPay && (
                       <button
                         type="button"

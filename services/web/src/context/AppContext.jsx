@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from "react";
 
 import { clearSession, isExpired, loadSession, saveSession } from "../auth/session.js";
+import { clearMyBookings } from "../data/myBookingsCache.js";
 import { login as apiLogin, register as apiRegister } from "../api/client.js";
 import { flush, pendingCount } from "../sync/queue.js";
 
@@ -61,6 +62,7 @@ export function AppProvider({ children }) {
 
   const logout = useCallback(async () => {
     await clearSession();
+    await clearMyBookings();
     setSession(null);
   }, []);
 

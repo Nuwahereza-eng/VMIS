@@ -321,6 +321,34 @@ export async function payBooking(token, bookingId, { method = "mobile_money", pa
   return parse(res);
 }
 
+// Gate side: resolve a scanned ticket QR (MF-...) to its booking.
+export async function getBookingByTicket(token, ticketCode) {
+  const res = await fetch(apiUrl(`/bookings/ticket/${encodeURIComponent(ticketCode)}`), {
+    headers: authHeaders(token),
+  });
+  return parse(res);
+}
+
+// Gate side: check a paid ticket in (starts the tour + validity window) or out
+// (completes the visit). `gate` defaults to the officer's station server-side.
+export async function checkInTicket(token, ticketCode, { gate } = {}) {
+  const res = await fetch(apiUrl(`/bookings/ticket/${encodeURIComponent(ticketCode)}/check-in`), {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify({ gate: gate || null }),
+  });
+  return parse(res);
+}
+
+export async function checkOutTicket(token, ticketCode, { gate } = {}) {
+  const res = await fetch(apiUrl(`/bookings/ticket/${encodeURIComponent(ticketCode)}/check-out`), {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify({ gate: gate || null }),
+  });
+  return parse(res);
+}
+
 // Expected (not-yet-arrived) visitors grouped per day, for management.
 export async function getExpectedSummary(token, { dateFrom, dateTo } = {}) {
   const params = new URLSearchParams();

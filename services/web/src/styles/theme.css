@@ -398,6 +398,19 @@ code {
   font-size: 1.4rem;
   flex: 0 0 46px;
 }
+.page-head__text { flex: 1 1 auto; min-width: 0; }
+.page-head__actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+/* On phones the actions drop to their own full-width row instead of
+   squeezing the title or pushing the page wider than the screen. */
+@media (max-width: 575.98px) {
+  .page-head { flex-wrap: wrap; }
+  .page-head__actions { flex-basis: 100%; }
+}
 .page-head h1 {
   font-size: 1.5rem;
   margin: 0;
@@ -914,6 +927,13 @@ code {
   color: #c4d2ca;
   display: block;
   margin-bottom: 0.6rem;
+}
+/* The big decorative icon is for the empty state itself, not its buttons. */
+.empty-state .btn i {
+  font-size: inherit;
+  color: inherit;
+  display: inline;
+  margin-bottom: 0;
 }
 
 table.table { --bs-table-border-color: var(--vmis-line); }
@@ -2525,3 +2545,152 @@ table.table { --bs-table-border-color: var(--vmis-line); }
 
 
 
+
+/* --- Live visit (tourist "My visit") --- */
+.live-dot {
+  display: inline-block;
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: var(--vmis-green-500);
+  box-shadow: 0 0 0 0 rgba(47, 157, 104, 0.6);
+  animation: live-pulse 1.8s ease-out infinite;
+}
+@keyframes live-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(47, 157, 104, 0.55); }
+  70% { box-shadow: 0 0 0 0.45rem rgba(47, 157, 104, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(47, 157, 104, 0); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .live-dot { animation: none; }
+}
+
+.visit-card { padding: 1.25rem; border-top: 4px solid var(--vmis-line); }
+.visit-card.is-touring { border-top-color: var(--vmis-green-500); }
+.visit-card.is-paid { border-top-color: var(--vmis-info); }
+.visit-card.is-expired { border-top-color: var(--vmis-danger); }
+.visit-card__head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+.visit-card__park { font-weight: 700; color: var(--vmis-ink); line-height: 1.15; }
+.visit-card__who { font-size: 0.85rem; color: var(--vmis-muted); }
+.visit-card__badge { white-space: nowrap; font-size: 0.85rem; }
+.visit-card__qr { margin: 1rem 0 0; }
+
+.visit-journey {
+  display: flex;
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+}
+.visit-journey__step {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  position: relative;
+  font-size: 0.75rem;
+  color: var(--vmis-muted);
+  text-align: center;
+}
+.visit-journey__step + .visit-journey__step::before {
+  content: "";
+  position: absolute;
+  top: 0.8rem;
+  right: 50%;
+  width: 100%;
+  height: 2px;
+  background: var(--vmis-line);
+  z-index: 0;
+}
+.visit-journey__step.is-done::before,
+.visit-journey__step.is-current::before { background: var(--vmis-green-500); }
+.visit-journey__dot {
+  position: relative;
+  z-index: 1;
+  width: 1.6rem;
+  height: 1.6rem;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font-weight: 700;
+  background: var(--vmis-bg-2);
+  color: var(--vmis-muted);
+  border: 2px solid var(--vmis-line);
+}
+.visit-journey__step.is-done .visit-journey__dot {
+  background: var(--vmis-green-500);
+  border-color: var(--vmis-green-500);
+  color: #fff;
+}
+.visit-journey__step.is-current .visit-journey__dot {
+  background: var(--vmis-surface);
+  border-color: var(--vmis-green-500);
+  color: var(--vmis-green-700);
+}
+.visit-journey__step.is-current { color: var(--vmis-ink); font-weight: 600; }
+.visit-journey__step.is-expired .visit-journey__dot { border-color: var(--vmis-danger); color: var(--vmis-danger); }
+.visit-journey__step.is-expired { color: var(--vmis-danger); }
+
+.visit-timer {
+  padding: 1rem;
+  border-radius: var(--vmis-radius-sm);
+  background: var(--vmis-green-50);
+  color: var(--vmis-green-800);
+}
+.visit-timer.is-warn { background: var(--vmis-gold-100); color: var(--vmis-gold-600); }
+.visit-timer.is-expired { background: #fbeceb; color: var(--vmis-danger); }
+.visit-timer.is-idle { background: var(--vmis-bg-2); color: var(--vmis-ink); }
+.visit-timer__label { font-weight: 600; }
+.visit-timer__clock {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 2.1rem;
+  font-weight: 700;
+  line-height: 1.2;
+  margin: 0.2rem 0 0.5rem;
+}
+.visit-timer__bar {
+  height: 6px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.7);
+  overflow: hidden;
+}
+.visit-timer__bar span { display: block; height: 100%; background: currentColor; opacity: 0.7; }
+.visit-timer__meta { font-size: 0.85rem; margin-top: 0.4rem; opacity: 0.9; }
+
+.visit-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+  margin-top: 1rem;
+}
+.visit-fact { display: flex; flex-direction: column; min-width: 0; }
+.visit-fact__label { font-size: 0.78rem; color: var(--vmis-muted); }
+.visit-fact__value { font-weight: 600; color: var(--vmis-ink); overflow-wrap: anywhere; }
+
+.visit-info__title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--vmis-green-700);
+  margin-bottom: 0.75rem;
+}
+.visit-list { padding-left: 1.1rem; margin-bottom: 0.75rem; font-size: 0.9rem; color: var(--vmis-body); }
+.visit-list li + li { margin-top: 0.35rem; }
+.visit-list--icons { list-style: none; padding-left: 0; }
+.visit-list--icons li { display: flex; gap: 0.6rem; align-items: flex-start; }
+.visit-list--icons i { color: var(--vmis-green-600); margin-top: 0.1rem; }
+.visit-highlights { display: grid; gap: 0.75rem; }
+.visit-highlight { display: flex; gap: 0.75rem; align-items: flex-start; }
+.visit-highlight img {
+  width: 72px;
+  height: 56px;
+  object-fit: cover;
+  border-radius: var(--vmis-radius-sm);
+  flex-shrink: 0;
+}

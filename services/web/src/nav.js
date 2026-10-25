@@ -107,6 +107,14 @@ export const NAV_ITEMS = [
     roles: ["management"],
   },
   {
+    to: "/my-visit",
+    label: "My Visit",
+    icon: "bi-compass",
+    title: "My visit",
+    subtitle: "Your live ticket, countdown, and park guide while you tour",
+    roles: ["tourist"],
+  },
+  {
     to: "/book",
     label: "Book a Visit",
     icon: "bi-calendar-plus",

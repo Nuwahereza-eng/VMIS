@@ -36,12 +36,18 @@ export default function QrScanner({ onDecode, onError }) {
     return () => {
       cancelled = true;
       const s = scannerRef.current;
-      if (s) {
+      if (!s) return;
+      // stop() throws synchronously (not a rejected promise) when the camera
+      // never started — no camera, or permission denied. Left uncaught, that
+      // unmounts the whole page, manual entry included.
+      try {
         s.stop()
           .then(() => s.clear())
           .catch(() => {
             /* already stopped */
           });
+      } catch {
+        /* never started */
       }
     };
   }, [onDecode, onError]);

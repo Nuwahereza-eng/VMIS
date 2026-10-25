@@ -59,6 +59,23 @@ class BookingStatus(str, enum.Enum):
     NO_SHOW = "no_show"  # intended date passed with no arrival
 
 
+class BookingLifecycle(str, enum.Enum):
+    """Where a tourist's booking is in the visit journey, derived on read.
+
+    Never stored: computed from the booking status, payment, gate check-in and
+    check-out, and the ticket validity window (arrival + nights x 24h), so it
+    flips from ``touring`` to ``expired`` on its own without a write.
+    """
+
+    BOOKED = "booked"  # captured, entry fee not yet paid
+    PAID = "paid"  # ticket issued, not yet checked in at a gate
+    TOURING = "touring"  # checked in at a gate, ticket still valid
+    COMPLETED = "completed"  # checked out on exit
+    EXPIRED = "expired"  # checked in but the validity window has run out
+    CANCELLED = "cancelled"
+    NO_SHOW = "no_show"
+
+
 class PaymentStatus(str, enum.Enum):
     """Whether a booking's entry fee has been paid (supervisor priority 5).
 

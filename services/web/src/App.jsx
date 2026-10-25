@@ -24,6 +24,7 @@ import ConfigurationPage from "./pages/ConfigurationPage.jsx";
 import BookingsPage from "./pages/BookingsPage.jsx";
 import BookVisitPage from "./pages/BookVisitPage.jsx";
 import MyBookingsPage from "./pages/MyBookingsPage.jsx";
+import MyVisitPage from "./pages/MyVisitPage.jsx";
 
 export default function App() {
   const { ready, session } = useApp();
@@ -54,6 +55,7 @@ export default function App() {
         {allowed.has("/register") && <Route path="/register" element={<RegisterPage />} />}
         {allowed.has("/verify") && <Route path="/verify" element={<VerifyPage />} />}
         {allowed.has("/bookings") && <Route path="/bookings" element={<BookingsPage />} />}
+        {allowed.has("/my-visit") && <Route path="/my-visit" element={<MyVisitPage />} />}
         {allowed.has("/book") && <Route path="/book" element={<BookVisitPage />} />}
         {allowed.has("/my-bookings") && <Route path="/my-bookings" element={<MyBookingsPage />} />}
         {allowed.has("/activities") && <Route path="/activities" element={<ActivitiesPage />} />}

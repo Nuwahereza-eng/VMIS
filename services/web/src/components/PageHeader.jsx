@@ -5,11 +5,11 @@ export default function PageHeader({ icon, title, subtitle, actions }) {
       <div className="page-head__icon">
         <i className={"bi " + icon} />
       </div>
-      <div className="flex-grow-1">
+      <div className="page-head__text">
         <h1>{title}</h1>
         {subtitle && <p>{subtitle}</p>}
       </div>
-      {actions && <div className="d-flex align-items-center gap-2">{actions}</div>}
+      {actions && <div className="page-head__actions">{actions}</div>}
     </div>
   );
 }

@@ -1,18 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { computeValidity } from "../domain/tickets.js";
-
-// Formats a remaining-seconds count as "2d 04:36:15" (drops the day part when
-// under 24h), matching the "Remaining Time" panel in the spec mock-up.
-function formatRemaining(totalSeconds) {
-  const days = Math.floor(totalSeconds / 86400);
-  const hours = Math.floor((totalSeconds % 86400) / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-  const pad = (n) => String(n).padStart(2, "0");
-  const clock = `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
-  return days > 0 ? `${days}d ${clock}` : clock;
-}
+import { computeValidity, formatClock } from "../domain/tickets.js";
 
 // A live ticket countdown: recomputes validity every second from the entry
 // time + nights so the status flips from Active to Expired on its own, exactly
@@ -52,7 +40,7 @@ export default function TicketCountdown({ entryTimestamp, nightsPurchased }) {
               className="ms-2"
               style={{ fontVariantNumeric: "tabular-nums", fontFamily: "monospace" }}
             >
-              {formatRemaining(validity.remainingSeconds)}
+              {formatClock(validity.remainingSeconds)}
             </span>
           )}
         </div>

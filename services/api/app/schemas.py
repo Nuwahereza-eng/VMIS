@@ -4,9 +4,11 @@ import uuid
 from datetime import date, datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
+from app.booking_lifecycle import compute_lifecycle
 from app.models.enums import (
+    BookingLifecycle,
     BookingStatus,
     PaymentStatus,
     Role,
@@ -479,6 +481,8 @@ class BookingOut(BaseModel):
     status: BookingStatus
     visitor_id: uuid.UUID | None
     arrived_at: datetime | None
+    entry_gate: str | None = None
+    departed_at: datetime | None = None
     created_at: datetime
 
     # Payment & ticketing (supervisor priority 5).
@@ -489,6 +493,32 @@ class BookingOut(BaseModel):
     payment_reference: str | None
     paid_at: datetime | None
     ticket_code: str | None
+
+    # Derived visit lifecycle (never stored; see app.booking_lifecycle).
+    lifecycle: BookingLifecycle = BookingLifecycle.BOOKED
+    ticket_expires_at: datetime | None = None
+    ticket_remaining_seconds: int | None = None
+
+    @model_validator(mode="after")
+    def _derive_lifecycle(self) -> "BookingOut":
+        state = compute_lifecycle(
+            self.status,
+            self.payment_status,
+            self.arrived_at,
+            self.departed_at,
+            self.length_of_stay_nights,
+        )
+        self.lifecycle = state.stage
+        self.ticket_expires_at = state.ticket_expires_at
+        self.ticket_remaining_seconds = state.ticket_remaining_seconds
+        return self
+
+
+class BookingGateAction(BaseModel):
+    """Gate check-in / check-out of a paid booking's ticket. ``gate`` defaults
+    to the officer's station when omitted."""
+
+    gate: str | None = Field(default=None, max_length=64)
 
 
 class BookingPay(BaseModel):

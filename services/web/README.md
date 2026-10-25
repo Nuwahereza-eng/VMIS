@@ -79,3 +79,5 @@ in the session here only decides what the UI shows. On-device at-rest
 encryption of the IndexedDB store is a remaining hardening task (see the root
 README's "Known gap: encryption at rest"). Use synthetic data only until UWA
 authorises real use (build prompt section 8).
+
+##run:cd ~/VMIS && docker-compose build api web && docker-compose up -d db && docker-compose rm -sf api web && docker-compose up -d --no-deps api web

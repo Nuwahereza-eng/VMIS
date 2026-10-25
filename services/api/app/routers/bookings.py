@@ -23,7 +23,14 @@ from app.models.enums import BookingStatus, PaymentStatus, Role
 from app.models.user import User
 from app.models.visitor import Visitor
 from app.rbac import get_current_user, require_roles
-from app.schemas import BookingCreate, BookingOut, BookingPay, BookingUpdate, ExpectedDay
+from app.schemas import (
+    BookingCreate,
+    BookingGateAction,
+    BookingOut,
+    BookingPay,
+    BookingUpdate,
+    ExpectedDay,
+)
 from app.tickets import make_payment_reference, make_ticket_code
 
 router = APIRouter(prefix="/bookings", tags=["bookings"])
@@ -36,6 +43,8 @@ _create_roles = require_roles(
     Role.GATE_OFFICER, Role.ACTIVITY_OFFICER, Role.MANAGEMENT, Role.TOURIST
 )
 _read_roles = require_roles(Role.GATE_OFFICER, Role.ACTIVITY_OFFICER, Role.MANAGEMENT)
+# Checking a ticket in or out happens at a gate.
+_gate_roles = require_roles(Role.GATE_OFFICER, Role.MANAGEMENT)
 
 
 @router.post("", response_model=BookingOut, status_code=status.HTTP_201_CREATED)
@@ -156,6 +165,104 @@ def expected_summary(
     ]
 
 
+def _booking_by_ticket(db: Session, ticket_code: str) -> Booking:
+    code = ticket_code.strip().upper()
+    booking = db.scalar(select(Booking).where(Booking.ticket_code == code))
+    if booking is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Ticket not found")
+    return booking
+
+
+@router.get("/ticket/{ticket_code}", response_model=BookingOut)
+def get_booking_by_ticket(
+    ticket_code: str,
+    db: Session = Depends(get_db),
+    _: User = Depends(_read_roles),
+) -> BookingOut:
+    """Resolve a scanned ticket QR (``MF-...``) to its booking."""
+    return BookingOut.model_validate(_booking_by_ticket(db, ticket_code))
+
+
+@router.post("/ticket/{ticket_code}/check-in", response_model=BookingOut)
+def check_in_ticket(
+    ticket_code: str,
+    payload: BookingGateAction,
+    db: Session = Depends(get_db),
+    officer: User = Depends(_gate_roles),
+) -> BookingOut:
+    """Check a paid ticket in at a gate: the tour starts and the validity
+    window (nights x 24h) begins counting from now. A late arrival on a booking
+    marked no-show is still accepted; a cancelled or already-used ticket is not."""
+    booking = _booking_by_ticket(db, ticket_code)
+    if booking.status == BookingStatus.CANCELLED:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This booking was cancelled; the ticket is void",
+        )
+    if booking.departed_at is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This ticket has already been used and checked out",
+        )
+    if booking.arrived_at is not None:
+        gate = booking.entry_gate or "a gate"
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=f"Already checked in at {gate}",
+        )
+
+    booking.status = BookingStatus.ARRIVED
+    booking.arrived_at = utcnow()
+    booking.entry_gate = payload.gate or officer.station_id or booking.expected_gate
+    db.flush()
+    record_audit(
+        db,
+        action="check_in",
+        entity_type="booking",
+        entity_id=str(booking.id),
+        actor_user_id=officer.id,
+        details={"ticket_code": booking.ticket_code, "gate": booking.entry_gate},
+    )
+    return BookingOut.model_validate(booking)
+
+
+@router.post("/ticket/{ticket_code}/check-out", response_model=BookingOut)
+def check_out_ticket(
+    ticket_code: str,
+    payload: BookingGateAction,
+    db: Session = Depends(get_db),
+    officer: User = Depends(_gate_roles),
+) -> BookingOut:
+    """Check a ticket out on exit, completing the visit. Allowed after expiry
+    too, so an overstaying party can still be signed out."""
+    booking = _booking_by_ticket(db, ticket_code)
+    if booking.arrived_at is None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This ticket has not been checked in yet",
+        )
+    if booking.departed_at is not None:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This ticket has already been checked out",
+        )
+
+    booking.departed_at = utcnow()
+    db.flush()
+    record_audit(
+        db,
+        action="check_out",
+        entity_type="booking",
+        entity_id=str(booking.id),
+        actor_user_id=officer.id,
+        details={
+            "ticket_code": booking.ticket_code,
+            "gate": payload.gate or officer.station_id,
+        },
+    )
+    return BookingOut.model_validate(booking)
+
+
 @router.get("/{booking_id}", response_model=BookingOut)
 def get_booking(
     booking_id: uuid.UUID,
@@ -191,6 +298,10 @@ def update_booking(
 
     for field, value in data.items():
         setattr(booking, field, value)
+
+    # Marking arrived by hand still starts the ticket's validity window.
+    if booking.status == BookingStatus.ARRIVED and booking.arrived_at is None:
+        booking.arrived_at = utcnow()
 
     db.flush()
     record_audit(

@@ -98,8 +98,8 @@ export default function BookVisitPage() {
               <BookingTicket booking={booking} />
             </div>
             <div className="d-flex gap-2 justify-content-center mt-3">
-              <Link to="/my-bookings" className="btn btn-success">
-                <i className="bi bi-journal-check" /> My bookings
+              <Link to="/my-visit" className="btn btn-success">
+                <i className="bi bi-compass" /> Open my visit
               </Link>
               <button type="button" className="btn btn-outline-success" onClick={bookAnother}>
                 <i className="bi bi-plus-lg" /> Book another visit

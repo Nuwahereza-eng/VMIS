@@ -6,6 +6,23 @@ import { VitePWA } from "vite-plugin-pwa";
 // dependency (build prompt Table 5). The service worker precaches the app
 // shell so registration, verification, and activity capture work with no
 // network; data lives in IndexedDB and syncs when a connection returns.
+// API path prefixes the dev server proxies to the backend. Keep in step with
+// the routers in services/api/app/routers.
+const API_PREFIXES = [
+  "/auth",
+  "/users",
+  "/visitors",
+  "/visits",
+  "/activities",
+  "/accommodations",
+  "/charges",
+  "/sync",
+  "/management",
+  "/bookings",
+  "/config",
+  "/health",
+];
+
 export default defineConfig({
   plugins: [
     react(),
@@ -54,19 +71,18 @@ export default defineConfig({
   ],
   server: {
     port: 5173,
-    proxy: {
-      // Dev convenience: forward API calls to the FastAPI backend.
-      "/auth": "http://localhost:8000",
-      "/users": "http://localhost:8000",
-      "/visitors": "http://localhost:8000",
-      "/visits": "http://localhost:8000",
-      "/activities": "http://localhost:8000",
-      "/accommodations": "http://localhost:8000",
-      "/charges": "http://localhost:8000",
-      "/sync": "http://localhost:8000",
-      "/management": "http://localhost:8000",
-      "/health": "http://localhost:8000",
-    },
+    // Dev convenience: forward API calls to the FastAPI backend.
+    proxy: Object.fromEntries(
+      API_PREFIXES.map((prefix) => [
+        prefix,
+        {
+          target: "http://localhost:8000",
+          // Several prefixes are also app pages (/bookings, /visits, /config…):
+          // a browser page load asks for HTML and must get the SPA, not the API.
+          bypass: (req) => (req.headers.accept?.includes("text/html") ? "/index.html" : undefined),
+        },
+      ]),
+    ),
   },
   test: {
     environment: "jsdom",

@@ -1,6 +1,6 @@
-import { useEffect, useRef, useState } from "react";
-import QRCode from "qrcode";
+import { useRef } from "react";
 
+import useTicketQr from "./useTicketQr.js";
 import { CATEGORIES, formatMinor } from "../domain/categories.js";
 
 const CATEGORY_LABEL = Object.fromEntries(CATEGORIES.map((c) => [c.code, c.label]));
@@ -27,28 +27,10 @@ function formatDate(iso) {
 // gate officer can scan) plus the trip and payment details. The QR is generated
 // in the browser from the server-issued ticket code — no personal data in it.
 export default function BookingTicket({ booking }) {
-  const [qrUrl, setQrUrl] = useState(null);
   const printRef = useRef(null);
 
   const ticketCode = booking?.ticket_code;
-
-  useEffect(() => {
-    let active = true;
-    if (!ticketCode) {
-      setQrUrl(null);
-      return undefined;
-    }
-    QRCode.toDataURL(ticketCode, { width: 320, margin: 1, errorCorrectionLevel: "M" })
-      .then((url) => {
-        if (active) setQrUrl(url);
-      })
-      .catch(() => {
-        if (active) setQrUrl(null);
-      });
-    return () => {
-      active = false;
-    };
-  }, [ticketCode]);
+  const qrUrl = useTicketQr(ticketCode);
 
   if (!booking || !ticketCode) return null;
 

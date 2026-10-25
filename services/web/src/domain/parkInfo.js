@@ -169,3 +169,13 @@ export const PLAN_TIPS = [
   "Book launch cruises and chimpanzee tracking ahead in peak season.",
   "Respect wildlife distances and follow ranger guidance at all times.",
 ];
+
+// Shown on the live "My visit" screen while a tour is in progress.
+export const SAFETY_TIPS = [
+  { icon: "bi-car-front", text: "Stay inside your vehicle on game drives unless at a marked stop or with a ranger." },
+  { icon: "bi-rulers", text: "Keep at least 25 m from elephants, buffalo and hippos; never block an animal's path." },
+  { icon: "bi-water", text: "Keep well back from riverbanks and the falls edge — crocodiles and hippos are common." },
+  { icon: "bi-moon", text: "No driving on park roads after 7pm without a ranger escort." },
+  { icon: "bi-trash3", text: "Do not feed animals or leave litter; carry all rubbish out of the park." },
+  { icon: "bi-telephone", text: "Network is patchy: your ticket and QR stay on this device, even offline." },
+];
