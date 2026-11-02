@@ -2694,3 +2694,107 @@ table.table { --bs-table-border-color: var(--vmis-line); }
   border-radius: var(--vmis-radius-sm);
   flex-shrink: 0;
 }
+
+/* --- Search fields (visitor picker, activity filter, bookings list) --- */
+.search-field { position: relative; }
+.search-field > i {
+  position: absolute;
+  left: 0.85rem;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--vmis-muted);
+  pointer-events: none;
+}
+.search-field .form-control { padding-left: 2.4rem; }
+
+.visitor-picker__list {
+  list-style: none;
+  margin: 0.75rem 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+.visitor-picker__item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.6rem 0.75rem;
+  border: 1px solid var(--vmis-line);
+  border-radius: var(--vmis-radius-sm);
+  background: var(--vmis-surface);
+  text-align: left;
+}
+.visitor-picker__item:hover,
+.visitor-picker__item:focus-visible {
+  border-color: var(--vmis-green-500);
+  background: var(--vmis-green-50);
+}
+.visitor-picker__text { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.visitor-picker__name { font-weight: 600; color: var(--vmis-ink); }
+
+.aap__change { margin-left: auto; white-space: nowrap; }
+
+/* Pinned total + Confirm: only when the summary drops below the list. */
+.aap__bar { display: none; }
+@media (max-width: 900px) {
+  .aap__summary-actions { display: none; }
+  .aap__bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    flex-wrap: wrap;
+    position: sticky;
+    bottom: 0;
+    z-index: 5;
+    margin: 0 -0.25rem;
+    padding: 0.75rem 1rem;
+    background: var(--vmis-surface);
+    border: 1px solid var(--vmis-line);
+    border-radius: var(--vmis-radius) var(--vmis-radius) 0 0;
+    box-shadow: 0 -8px 24px rgba(16, 40, 30, 0.12);
+  }
+  .aap__bar-total { display: flex; flex-direction: column; line-height: 1.2; }
+  .aap__bar-total strong { color: var(--vmis-green-700); font-size: 1.15rem; }
+  .aap__bar-actions { display: flex; gap: 0.5rem; align-items: center; }
+  .aap__bar-actions .form-select { width: auto; max-width: 9.5rem; }
+}
+
+.email-ticket .form-label { color: var(--vmis-ink); font-weight: 600; }
+
+/* Lodge photos above the accommodation list (not tied to a named lodge). */
+.photo-strip {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr;
+  gap: 0.75rem;
+}
+.photo-strip__item { margin: 0; position: relative; border-radius: var(--vmis-radius-sm); overflow: hidden; }
+.photo-strip__item img { width: 100%; height: 200px; object-fit: cover; display: block; }
+.photo-strip__item figcaption {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  padding: 1.5rem 0.75rem 0.5rem;
+  font-size: 0.8rem;
+  color: #fff;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.6));
+}
+@media (max-width: 575.98px) {
+  .photo-strip { grid-template-columns: 1fr 1fr; }
+  .photo-strip__item:first-child { grid-column: 1 / -1; }
+  .photo-strip__item img { height: 150px; }
+}
+.visit-highlight__icon {
+  width: 72px;
+  height: 56px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: var(--vmis-radius-sm);
+  background: var(--vmis-green-50);
+  color: var(--vmis-green-600);
+  font-size: 1.4rem;
+}

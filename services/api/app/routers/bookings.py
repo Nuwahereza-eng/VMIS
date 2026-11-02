@@ -23,14 +23,17 @@ from app.models.enums import BookingStatus, PaymentStatus, Role
 from app.models.user import User
 from app.models.visitor import Visitor
 from app.rbac import get_current_user, require_roles
+from app.mailer import EmailNotConfigured, EmailSendFailed, send_email
 from app.schemas import (
     BookingCreate,
+    BookingEmailTicket,
     BookingGateAction,
     BookingOut,
     BookingPay,
     BookingUpdate,
     ExpectedDay,
 )
+from app.ticket_email import build_ticket_email
 from app.tickets import make_payment_reference, make_ticket_code
 
 router = APIRouter(prefix="/bookings", tags=["bookings"])
@@ -416,6 +419,68 @@ def pay_booking(
             "method": booking.payment_method,
             "ticket_code": booking.ticket_code,
         },
+    )
+    return BookingOut.model_validate(booking)
+
+
+@router.post("/{booking_id}/email-ticket", response_model=BookingOut)
+def email_ticket(
+    booking_id: uuid.UUID,
+    payload: BookingEmailTicket,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+) -> BookingOut:
+    """Email a paid booking's ticket (QR + trip details) to the booking's email.
+
+    Meant for bookings captured at a gate: those visitors have no account, so
+    the email is their copy of the ticket. Officers and management may send any
+    booking's ticket; a tourist only their own. Can be re-sent.
+    """
+    booking = db.get(Booking, booking_id)
+    if booking is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Booking not found")
+    if current_user.role == Role.TOURIST and booking.created_by_id != current_user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="You can only email your own tickets",
+        )
+    if booking.payment_status != PaymentStatus.PAID or not booking.ticket_code:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="Take payment first: only a paid booking has a ticket to send",
+        )
+    if booking.status == BookingStatus.CANCELLED:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail="This booking was cancelled; its ticket is void",
+        )
+    if payload.email:
+        booking.email = payload.email
+    if not booking.email:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Add the visitor's email address to send the ticket",
+        )
+
+    try:
+        send_email(build_ticket_email(booking))
+    except EmailNotConfigured as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Email isn't set up on this server yet ({exc})",
+        ) from exc
+    except EmailSendFailed as exc:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
+
+    booking.ticket_emailed_at = utcnow()
+    db.flush()
+    record_audit(
+        db,
+        action="email_ticket",
+        entity_type="booking",
+        entity_id=str(booking.id),
+        actor_user_id=current_user.id,
+        details={"ticket_code": booking.ticket_code},
     )
     return BookingOut.model_validate(booking)
 

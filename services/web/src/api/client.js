@@ -50,14 +50,29 @@ async function fetchWithTimeout(url, options = {}, timeoutMs = 15000) {
   }
 }
 
+// A hosted API on a free tier (e.g. Render) sleeps when idle and takes up to a
+// minute to wake. Sign-in/up wait that long; a server that is truly unreachable
+// (DNS, offline) still fails immediately, because fetch rejects straight away.
+const AUTH_TIMEOUT_MS = 75000;
+
+// Fire-and-forget ping that starts waking a sleeping API while the user is
+// still typing their credentials. Never throws.
+export function wakeServer() {
+  fetchWithTimeout(apiUrl("/health"), {}, AUTH_TIMEOUT_MS).catch(() => {});
+}
+
 // OAuth2 password grant: /auth/token expects form-encoded credentials.
 export async function login(username, password) {
   const form = new URLSearchParams({ username, password });
-  const res = await fetchWithTimeout(apiUrl("/auth/token"), {
-    method: "POST",
-    headers: { "Content-Type": "application/x-www-form-urlencoded" },
-    body: form.toString(),
-  });
+  const res = await fetchWithTimeout(
+    apiUrl("/auth/token"),
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: form.toString(),
+    },
+    AUTH_TIMEOUT_MS,
+  );
   const body = await parse(res);
   return body.access_token;
 }
@@ -65,11 +80,15 @@ export async function login(username, password) {
 // Public self-service sign-up for tourists. Returns a token so the new account
 // is signed straight in. The server fixes the role to "tourist".
 export async function register(email, password, fullName) {
-  const res = await fetchWithTimeout(apiUrl("/auth/register"), {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password, full_name: fullName }),
-  });
+  const res = await fetchWithTimeout(
+    apiUrl("/auth/register"),
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, full_name: fullName }),
+    },
+    AUTH_TIMEOUT_MS,
+  );
   const body = await parse(res);
   return body.access_token;
 }
@@ -317,6 +336,17 @@ export async function payBooking(token, bookingId, { method = "mobile_money", pa
     method: "POST",
     headers: authHeaders(token),
     body: JSON.stringify({ method, payer_reference: payerReference ?? null }),
+  });
+  return parse(res);
+}
+
+// Email a paid booking's ticket (QR + details) to the booking's email; pass
+// `email` to set or correct the address first. Returns the updated booking.
+export async function emailTicket(token, bookingId, { email } = {}) {
+  const res = await fetch(apiUrl(`/bookings/${bookingId}/email-ticket`), {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify({ email: email || null }),
   });
   return parse(res);
 }

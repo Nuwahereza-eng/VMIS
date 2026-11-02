@@ -75,3 +75,6 @@ class Booking(UUIDPrimaryKeyMixin, TimestampMixin, SyncMixin, Base):
     payment_reference: Mapped[str | None] = mapped_column(String(64), nullable=True)
     paid_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     ticket_code: Mapped[str | None] = mapped_column(String(32), nullable=True, unique=True, index=True)
+    # When the ticket was last emailed to ``email`` (bookings made at a gate,
+    # whose visitors have no account to open the app with).
+    ticket_emailed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

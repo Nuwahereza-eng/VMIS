@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { useApp } from "../context/AppContext.jsx";
-import { ApiError } from "../api/client.js";
+import { ApiError, wakeServer } from "../api/client.js";
+import useSlowHint from "../data/useSlowHint.js";
 
 // Public self-service sign-up. Creates a tourist account and signs straight in;
 // the server fixes the role, so nothing here can mint an officer account.
@@ -14,6 +15,11 @@ export default function SignupPage() {
   const [confirm, setConfirm] = useState("");
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
+  const slow = useSlowHint(busy);
+
+  useEffect(() => {
+    wakeServer();
+  }, []);
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -38,7 +44,7 @@ export default function SignupPage() {
       } else if (err instanceof ApiError && err.status === 422) {
         setError("Please check your details and enter a valid email address.");
       } else if (err instanceof ApiError && err.status === 0) {
-        setError("Can't reach the server right now. It may be starting up — please try again in a moment.");
+        setError(err.message || "Can't reach the server right now. Please try again in a moment.");
       } else {
         setError("Could not create your account. Please try again online.");
       }
@@ -94,6 +100,12 @@ export default function SignupPage() {
                 </div>
               )}
               {error && <div className="alert alert-danger py-2 mb-3">{error}</div>}
+              {slow && !error && (
+                <div className="alert alert-info py-2 mb-3">
+                  <i className="bi bi-hourglass-split" /> Waking up the server — this can take up to a
+                  minute after a quiet spell. Hang tight…
+                </div>
+              )}
 
               <form onSubmit={onSubmit}>
                 <div className="mb-3">

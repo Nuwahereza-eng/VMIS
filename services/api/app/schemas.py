@@ -493,6 +493,7 @@ class BookingOut(BaseModel):
     payment_reference: str | None
     paid_at: datetime | None
     ticket_code: str | None
+    ticket_emailed_at: datetime | None = None
 
     # Derived visit lifecycle (never stored; see app.booking_lifecycle).
     lifecycle: BookingLifecycle = BookingLifecycle.BOOKED
@@ -512,6 +513,24 @@ class BookingOut(BaseModel):
         self.ticket_expires_at = state.ticket_expires_at
         self.ticket_remaining_seconds = state.ticket_remaining_seconds
         return self
+
+
+class BookingEmailTicket(BaseModel):
+    """Email a paid booking's ticket. ``email`` (optional) sets or corrects the
+    address on the booking first, for a gate booking captured without one."""
+
+    email: str | None = Field(default=None, max_length=128)
+
+    @field_validator("email")
+    @classmethod
+    def _normalise_email(cls, value: str | None) -> str | None:
+        if value is None or not value.strip():
+            return None
+        email = value.strip().lower()
+        local, _, domain = email.partition("@")
+        if not local or "." not in domain or " " in email:
+            raise ValueError("Enter a valid email address")
+        return email
 
 
 class BookingGateAction(BaseModel):

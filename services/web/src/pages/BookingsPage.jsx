@@ -2,13 +2,16 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { useApp } from "../context/AppContext.jsx";
 import PageHeader from "../components/PageHeader.jsx";
+import PaymentPanel from "../components/PaymentPanel.jsx";
+import BookingTicket from "../components/BookingTicket.jsx";
+import EmailTicketForm from "../components/EmailTicketForm.jsx";
 import {
   createBooking,
   deleteBooking,
   getBookings,
   updateBooking,
 } from "../api/client.js";
-import { CATEGORIES } from "../domain/categories.js";
+import { CATEGORIES, formatMinor } from "../domain/categories.js";
 import { GATES, LODGES } from "../domain/reference.js";
 
 const CATEGORY_LABEL = Object.fromEntries(CATEGORIES.map((c) => [c.code, c.label]));
@@ -62,6 +65,9 @@ export default function BookingsPage() {
   const [note, setNote] = useState(null);
   const [error, setError] = useState(null);
   const [busyId, setBusyId] = useState(null);
+  const [search, setSearch] = useState("");
+  // Payment / ticket modal: { mode: "pay" | "ticket", booking, justPaid }.
+  const [modal, setModal] = useState(null);
 
   // Filters: default to everything from today forward.
   const [filterFrom, setFilterFrom] = useState(todayISO());
@@ -114,10 +120,16 @@ export default function BookingsPage() {
         accommodation: form.accommodation || null,
         notes: form.notes.trim() || null,
       };
-      await createBooking(token, payload);
+      const created = await createBooking(token, payload);
       setForm(emptyForm());
-      setNote("Pre-booking captured.");
       await load();
+      // A walk-in at the gate pays on the spot: go straight to payment when
+      // the fee can be quoted (a category was chosen).
+      if (created?.category) {
+        setModal({ mode: "pay", booking: created });
+      } else {
+        setNote("Pre-booking captured. Choose a visitor category to take payment.");
+      }
     } catch (err) {
       setError(err?.message || "Could not save the booking.");
     } finally {
@@ -151,14 +163,28 @@ export default function BookingsPage() {
     }
   }
 
+  function replaceBooking(updated) {
+    setBookings((rows) => rows.map((r) => (r.id === updated.id ? updated : r)));
+  }
+
+  const visible = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    if (!q) return bookings;
+    return bookings.filter((b) =>
+      [b.full_name, b.email, b.phone, b.ticket_code, b.country, b.tour_company]
+        .filter(Boolean)
+        .some((v) => String(v).toLowerCase().includes(q)),
+    );
+  }, [bookings, search]);
+
   const grouped = useMemo(() => {
     const byDate = new Map();
-    for (const b of bookings) {
+    for (const b of visible) {
       if (!byDate.has(b.intended_date)) byDate.set(b.intended_date, []);
       byDate.get(b.intended_date).push(b);
     }
     return [...byDate.entries()].sort((a, b) => a[0].localeCompare(b[0]));
-  }, [bookings]);
+  }, [visible]);
 
   const expectedCount = bookings.filter((b) => b.status === "pending").length;
 
@@ -371,6 +397,18 @@ export default function BookingsPage() {
               </div>
             </div>
 
+            <div className="search-field mb-3">
+              <i className="bi bi-search" aria-hidden="true" />
+              <input
+                type="search"
+                className="form-control"
+                placeholder="Search name, email, phone or ticket code"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                aria-label="Search bookings"
+              />
+            </div>
+
             {loading ? (
               <div className="empty-state mb-0">
                 <i className="bi bi-arrow-repeat spin" /> Loading…
@@ -401,6 +439,23 @@ export default function BookingsPage() {
                               <span className={"pill " + meta.cls}>
                                 <i className={"bi " + meta.icon} /> {meta.label}
                               </span>
+                              {b.payment_status === "paid" ? (
+                                <span className="pill green">
+                                  <i className="bi bi-patch-check-fill" /> Paid
+                                </span>
+                              ) : (
+                                b.amount_minor != null &&
+                                b.status !== "cancelled" && (
+                                  <span className="pill gold">
+                                    <i className="bi bi-hourglass" /> {formatMinor(b.amount_minor, b.currency)} due
+                                  </span>
+                                )
+                              )}
+                              {b.ticket_emailed_at && (
+                                <span className="pill info" title={`Emailed ${new Date(b.ticket_emailed_at).toLocaleString()}`}>
+                                  <i className="bi bi-envelope-check" /> Emailed
+                                </span>
+                              )}
                             </div>
                             <div className="muted" style={{ fontSize: "0.84rem" }}>
                               <i className="bi bi-people" /> {b.party_size}
@@ -419,6 +474,25 @@ export default function BookingsPage() {
                             )}
                           </div>
                           <div className="d-flex align-items-center gap-1">
+                            {b.payment_status !== "paid" && b.category && b.status !== "cancelled" && (
+                              <button
+                                className="icon-btn icon-btn--sm"
+                                title="Take payment"
+                                disabled={!online || busyId === b.id}
+                                onClick={() => setModal({ mode: "pay", booking: b })}
+                              >
+                                <i className="bi bi-credit-card" />
+                              </button>
+                            )}
+                            {b.payment_status === "paid" && b.ticket_code && (
+                              <button
+                                className="icon-btn icon-btn--sm"
+                                title="Ticket & email"
+                                onClick={() => setModal({ mode: "ticket", booking: b })}
+                              >
+                                <i className="bi bi-qr-code" />
+                              </button>
+                            )}
                             {b.status === "pending" && (
                               <>
                                 <button
@@ -470,6 +544,54 @@ export default function BookingsPage() {
           </div>
         </div>
       </div>
+          {modal && (
+        <div className="vmis-modal-backdrop" onClick={() => setModal(null)}>
+          <div className="vmis-modal" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <div className="vmis-modal__head">
+              <h3 className="mb-0">{modal.mode === "pay" ? "Take payment" : "Ticket"}</h3>
+              <button type="button" className="btn-close" aria-label="Close" onClick={() => setModal(null)} />
+            </div>
+            <div className="vmis-modal__body">
+              {modal.mode === "pay" ? (
+                <>
+                  <div className="mb-3">
+                    <div className="fw-semibold" style={{ color: "var(--vmis-ink)" }}>
+                      {modal.booking.full_name}
+                    </div>
+                    <div className="muted small">
+                      Party of {modal.booking.party_size} · {formatDate(modal.booking.intended_date)}
+                    </div>
+                  </div>
+                  <PaymentPanel
+                    booking={modal.booking}
+                    token={token}
+                    online={online}
+                    onPaid={(paid) => {
+                      replaceBooking(paid);
+                      setModal({ mode: "ticket", booking: paid, justPaid: true });
+                    }}
+                  />
+                </>
+              ) : (
+                <>
+                  <EmailTicketForm
+                    booking={modal.booking}
+                    token={token}
+                    online={online}
+                    autoSend={Boolean(modal.justPaid)}
+                    onSent={(updated) => {
+                      replaceBooking(updated);
+                      setModal((m) => (m ? { ...m, booking: updated } : m));
+                    }}
+                  />
+                  <hr />
+                  <BookingTicket booking={modal.booking} />
+                </>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

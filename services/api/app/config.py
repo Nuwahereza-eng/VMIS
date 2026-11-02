@@ -65,6 +65,20 @@ class Settings(BaseSettings):
     # tokens, not cookies, so credentialed CORS is not required.
     cors_allow_origins: str = "*"
 
+    # Outbound email (ticket delivery for bookings captured at a gate, whose
+    # visitors have no account to open the app with). Backends:
+    #   none    - email is off; sending reports "not configured" (default)
+    #   console - log the message instead of sending (local development)
+    #   smtp    - any SMTP provider (Gmail app password, Brevo, Mailgun, ...)
+    #   resend  - Resend's HTTPS API, for hosts that block outbound SMTP ports
+    email_backend: str = "none"
+    email_from: str | None = None  # e.g. "Murchison Falls NP <tickets@example.org>"
+    smtp_host: str | None = None
+    smtp_port: int = 587  # 587 = STARTTLS, 465 = implicit TLS
+    smtp_username: str | None = None
+    smtp_password: str | None = None
+    resend_api_key: str | None = None
+
     @property
     def cors_origins(self) -> list[str]:
         raw = (self.cors_allow_origins or "").strip()

@@ -58,7 +58,7 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2}"],
+        globPatterns: ["**/*.{js,css,html,svg,png,jpg,ico,woff2}"],
         navigateFallback: "index.html",
         // Never cache API calls: the local store is the offline source of
         // truth, not stale HTTP responses.

@@ -95,7 +95,13 @@ function InParkContext({ booking, stage }) {
         <div className="visit-highlights">
           {ATTRACTIONS.slice(0, 4).map((a) => (
             <div key={a.name} className="visit-highlight">
-              <img src={a.image} alt="" loading="lazy" />
+              {a.image ? (
+                <img src={a.image} alt="" loading="lazy" />
+              ) : (
+                <span className="visit-highlight__icon">
+                  <i className={"bi " + a.icon} />
+                </span>
+              )}
               <div>
                 <div className="fw-semibold" style={{ color: "var(--vmis-ink)", fontSize: "0.92rem" }}>
                   {a.name}

@@ -1,8 +1,9 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 
 import { useApp } from "../context/AppContext.jsx";
-import { ApiError } from "../api/client.js";
+import { ApiError, wakeServer } from "../api/client.js";
+import useSlowHint from "../data/useSlowHint.js";
 
 // One-tap demo accounts so reviewers can jump straight into each role.
 const DEMO_ROLES = [
@@ -47,6 +48,12 @@ export default function LoginPage() {
   const [error, setError] = useState(null);
   const [busy, setBusy] = useState(false);
   const [demoBusy, setDemoBusy] = useState(null);
+  const slow = useSlowHint(busy || Boolean(demoBusy));
+
+  // Start waking a sleeping server while the user picks an account.
+  useEffect(() => {
+    wakeServer();
+  }, []);
 
   async function onSubmit(e) {
     e.preventDefault();
@@ -58,7 +65,7 @@ export default function LoginPage() {
       if (err instanceof ApiError && err.status === 401) {
         setError("Invalid username or password.");
       } else if (err instanceof ApiError && err.status === 0) {
-        setError("Can't reach the server right now. It may be starting up — please try again in a moment.");
+        setError(err.message || "Can't reach the server right now. Please try again in a moment.");
       } else {
         setError("Sign-in requires a connection the first time. Please try again online.");
       }
@@ -76,7 +83,7 @@ export default function LoginPage() {
       if (err instanceof ApiError && err.status === 401) {
         setError("Demo account not available on this server.");
       } else if (err instanceof ApiError && err.status === 0) {
-        setError("Can't reach the server right now. It may be starting up — please try again in a moment.");
+        setError(err.message || "Can't reach the server right now. Please try again in a moment.");
       } else {
         setError("Sign-in requires a connection the first time. Please try again online.");
       }
@@ -132,6 +139,12 @@ export default function LoginPage() {
                 </div>
               )}
               {error && <div className="alert alert-danger py-2 mb-3">{error}</div>}
+              {slow && !error && (
+                <div className="alert alert-info py-2 mb-3">
+                  <i className="bi bi-hourglass-split" /> Waking up the server — this can take up to a
+                  minute after a quiet spell. Hang tight…
+                </div>
+              )}
 
               <div className="demo-login">
                 <div className="demo-login__label">

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 import { useApp } from "../context/AppContext.jsx";
+import VisitorPicker from "../components/VisitorPicker.jsx";
 import { getActivities } from "../api/client.js";
 import { getMeta, setMeta } from "../db/store.js";
 import { CATEGORY_CURRENCY, formatMinor } from "../domain/categories.js";
@@ -51,6 +52,7 @@ export default function ActivitiesPage() {
   const [note, setNote] = useState(null);
   const [done, setDone] = useState(null);
   const [busy, setBusy] = useState(false);
+  const [actQuery, setActQuery] = useState("");
 
   // Load visitors + the cached fee catalogue (refresh from server when online).
   useEffect(() => {
@@ -100,6 +102,18 @@ export default function ActivitiesPage() {
   }, [openVisit]);
 
   const activeActivities = catalogue.filter((a) => a.is_active !== false);
+  const aq = actQuery.trim().toLowerCase();
+  const shownActivities = aq
+    ? activeActivities.filter((a) => a.name.toLowerCase().includes(aq))
+    : activeActivities;
+
+  // A visitor found through the server search may not be in the preloaded
+  // list yet; keep it so the rest of the page can resolve it.
+  function pickVisitor(v) {
+    setVisitors((list) => (list.some((x) => x.id === v.id) ? list : [...list, v]));
+    setVisitorId(v.id);
+    setActQuery("");
+  }
 
   function rateFor(activity) {
     if (!activity || !visitor) return null;
@@ -257,21 +271,7 @@ export default function ActivitiesPage() {
 
       <div className="aap__body">
         {!visitorId && (
-          <div className="surface-card p-3 mb-1">
-            <label className="form-label">Visitor</label>
-            <select
-              className="form-select"
-              value={visitorId}
-              onChange={(e) => setVisitorId(e.target.value)}
-            >
-              <option value="">Select a visitor…</option>
-              {visitors.map((v) => (
-                <option key={v.id} value={v.id}>
-                  {v.full_name} ({v.category})
-                </option>
-              ))}
-            </select>
-          </div>
+          <VisitorPicker visitors={visitors} token={session.token} online={online} onPick={pickVisitor} />
         )}
 
         {note && <div className={`alert alert-${note.type}`}>{note.text}</div>}
@@ -297,6 +297,16 @@ export default function ActivitiesPage() {
                       {validity.status === "Active" ? "VALID" : "EXPIRED"}
                     </span>
                   )}
+                  <button
+                    type="button"
+                    className="btn btn-outline-success btn-sm aap__change"
+                    onClick={() => {
+                      setVisitorId("");
+                      setNote(null);
+                    }}
+                  >
+                    <i className="bi bi-arrow-left-right" /> Change
+                  </button>
                 </div>
                 <div className="aap__remaining">
                   <div className="vp__remaining-label">
@@ -315,6 +325,19 @@ export default function ActivitiesPage() {
               {/* Select activity */}
               <div className="surface-card p-4">
                 <h3 className="vp__card-title">SELECT ACTIVITY</h3>
+                {activeActivities.length > 6 && (
+                  <div className="search-field mb-3">
+                    <i className="bi bi-search" aria-hidden="true" />
+                    <input
+                      type="search"
+                      className="form-control"
+                      placeholder="Filter activities"
+                      value={actQuery}
+                      onChange={(e) => setActQuery(e.target.value)}
+                      aria-label="Filter activities"
+                    />
+                  </div>
+                )}
                 {activeActivities.length === 0 ? (
                   <div className="empty-state mb-0">
                     <i className="bi bi-exclamation-triangle" /> No catalogue cached yet. Connect
@@ -322,7 +345,10 @@ export default function ActivitiesPage() {
                   </div>
                 ) : (
                   <div className="aap__acts">
-                    {activeActivities.map((a) => {
+                    {shownActivities.length === 0 && (
+                      <div className="muted small">No activity matches “{actQuery.trim()}”.</div>
+                    )}
+                    {shownActivities.map((a) => {
                       const price = rateFor(a);
                       return (
                         <label key={a.id} className="aap__act">
@@ -368,6 +394,7 @@ export default function ActivitiesPage() {
                 <span>{formatMinor(totalPayable, currency)}</span>
               </div>
 
+              <div className="aap__summary-actions">
               <label className="form-label mt-3">Payment Method</label>
               <select
                 className="form-select"
@@ -385,6 +412,36 @@ export default function ActivitiesPage() {
                 <i className={"bi " + (busy ? "bi-arrow-repeat spin" : "bi-check2-circle")} />{" "}
                 {busy ? "Saving…" : "Confirm & Save"}
               </button>
+              </div>
+            </div>
+
+            {/* On narrow screens the total and Confirm stay pinned to the
+                bottom, so the officer never scrolls past the list to save. */}
+            <div className="aap__bar" role="region" aria-label="Payment">
+              <div className="aap__bar-total">
+                <span className="muted small">
+                  {selectedIds.length} selected · Total
+                </span>
+                <strong>{formatMinor(totalPayable, currency)}</strong>
+              </div>
+              <div className="aap__bar-actions">
+                <select
+                  className="form-select form-select-sm"
+                  value={method}
+                  onChange={(e) => setMethod(e.target.value)}
+                  aria-label="Payment method"
+                >
+                  {PAYMENT_METHODS.map((m) => (
+                    <option key={m} value={m}>
+                      {m}
+                    </option>
+                  ))}
+                </select>
+                <button className="btn btn-success" onClick={onConfirm} disabled={busy || selectedIds.length === 0}>
+                  <i className={"bi " + (busy ? "bi-arrow-repeat spin" : "bi-check2-circle")} />{" "}
+                  {busy ? "Saving…" : "Confirm"}
+                </button>
+              </div>
             </div>
           </div>
         )}

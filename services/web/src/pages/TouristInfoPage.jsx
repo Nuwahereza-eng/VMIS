@@ -7,48 +7,72 @@ import {
   ENTRY_POINTS,
   FERRY,
   ACCOMMODATION,
+  LODGE_PHOTOS,
   KEY_LOCATIONS,
   ROUTES,
   PLAN_TIPS,
 } from "../domain/parkInfo.js";
 
-function CardGrid({ items }) {
+function InfoCard({ it }) {
   return (
-    <div className="row g-3">
-      {items.map((it) => (
-        <div className="col-sm-6 col-lg-4" key={it.name}>
-          <div className="info-card h-100">
-            {it.image ? (
-              <div className="info-card__media">
-                <img
-                  src={it.image}
-                  alt={it.name}
-                  loading="lazy"
-                  onError={(e) => {
-                    // A broken photo URL must never break the layout: drop the
-                    // media band and let the icon + text stand on their own.
-                    e.currentTarget.parentElement.remove();
-                  }}
-                />
-              </div>
-            ) : null}
-            <div className="info-card__body">
-              <span className="d-flex align-items-start gap-2">
-                {it.icon ? <i className={"bi " + it.icon} style={{ color: "var(--vmis-green-600)" }} /> : null}
-                <span>
-                  <span className="d-block fw-semibold" style={{ color: "var(--vmis-ink)" }}>
-                    {it.name}
-                  </span>
-                  {it.note ? (
-                    <span className="muted" style={{ fontSize: "0.85rem" }}>{it.note}</span>
-                  ) : null}
-                </span>
-              </span>
-            </div>
-          </div>
+    <div className="info-card h-100">
+      {it.image ? (
+        <div className="info-card__media">
+          <img
+            src={it.image}
+            alt={it.name}
+            loading="lazy"
+            onError={(e) => {
+              // A broken photo URL must never break the layout: drop the
+              // media band and let the icon + text stand on their own.
+              e.currentTarget.parentElement.remove();
+            }}
+          />
         </div>
-      ))}
+      ) : null}
+      <div className="info-card__body">
+        <span className="d-flex align-items-start gap-2">
+          {it.icon ? <i className={"bi " + it.icon} style={{ color: "var(--vmis-green-600)" }} /> : null}
+          <span>
+            <span className="d-block fw-semibold" style={{ color: "var(--vmis-ink)" }}>
+              {it.name}
+            </span>
+            {it.note ? (
+              <span className="muted" style={{ fontSize: "0.85rem" }}>{it.note}</span>
+            ) : null}
+          </span>
+        </span>
+      </div>
     </div>
+  );
+}
+
+// Cards with a photo lead, then the text-only cards, so a short text card is
+// never stretched to the height of a photo card beside it.
+function CardGrid({ items }) {
+  const withPhoto = items.filter((it) => it.image);
+  const textOnly = items.filter((it) => !it.image);
+  return (
+    <>
+      {withPhoto.length > 0 && (
+        <div className={"row g-3" + (textOnly.length ? " mb-3" : "")}>
+          {withPhoto.map((it) => (
+            <div className="col-sm-6 col-lg-4" key={it.name}>
+              <InfoCard it={it} />
+            </div>
+          ))}
+        </div>
+      )}
+      {textOnly.length > 0 && (
+        <div className="row g-3">
+          {textOnly.map((it) => (
+            <div className="col-sm-6 col-lg-4" key={it.name}>
+              <InfoCard it={it} />
+            </div>
+          ))}
+        </div>
+      )}
+    </>
   );
 }
 
@@ -157,6 +181,14 @@ export default function TouristInfoPage() {
         title="Accommodation"
         subtitle="Lodges and camps in and around the park."
       >
+        <div className="photo-strip mb-3">
+          {LODGE_PHOTOS.map((p) => (
+            <figure key={p.src} className="photo-strip__item">
+              <img src={p.src} alt={p.caption} loading="lazy" />
+              <figcaption>{p.caption}</figcaption>
+            </figure>
+          ))}
+        </div>
         <CardGrid items={ACCOMMODATION} />
       </Section>
 
