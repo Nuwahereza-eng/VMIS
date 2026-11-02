@@ -1,7 +1,7 @@
 import { useState } from "react";
 
 import { checkInTicket, checkOutTicket } from "../api/client.js";
-import { CATEGORIES } from "../domain/categories.js";
+import { CATEGORIES, formatMinor } from "../domain/categories.js";
 import { GATES } from "../domain/reference.js";
 import { formatDuration } from "../domain/tickets.js";
 import { LIFECYCLE_META, lifecycleOf } from "../domain/visitLifecycle.js";
@@ -62,14 +62,29 @@ export default function TicketCheckInPanel({ booking: initial, token, online, st
       </div>
 
       <div className="breakdown-list mb-3">
-        <div className="data-row">
-          <span className="muted">Visit date</span>
-          <span>{booking.intended_date}</span>
-        </div>
-        <div className="data-row">
-          <span className="muted">Payment</span>
-          <span>{booking.payment_status === "paid" ? "Paid" : "Unpaid"}</span>
-        </div>
+        {[
+          ["Visit date", booking.intended_date],
+          ["From", booking.country],
+          ["Phone", booking.phone],
+          ["Email", booking.email],
+          ["Expected gate", booking.expected_gate],
+          ["Accommodation", booking.accommodation],
+          ["Tour operator", booking.tour_company],
+          [
+            "Payment",
+            booking.payment_status === "paid"
+              ? `Paid${booking.amount_minor != null ? ` · ${formatMinor(booking.amount_minor, booking.currency)}` : ""}`
+              : "Unpaid",
+          ],
+          ["Notes", booking.notes],
+        ]
+          .filter(([, value]) => value)
+          .map(([label, value]) => (
+            <div className="data-row" key={label}>
+              <span className="muted">{label}</span>
+              <span className="text-end">{value}</span>
+            </div>
+          ))}
         {booking.arrived_at && (
           <div className="data-row">
             <span className="muted">Checked in</span>

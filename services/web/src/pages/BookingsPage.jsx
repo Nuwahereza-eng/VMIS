@@ -8,6 +8,7 @@ import EmailTicketForm from "../components/EmailTicketForm.jsx";
 import {
   createBooking,
   deleteBooking,
+  emailTicket,
   getBookings,
   updateBooking,
 } from "../api/client.js";
@@ -575,13 +576,16 @@ export default function BookingsPage() {
               ) : (
                 <>
                   <EmailTicketForm
-                    booking={modal.booking}
-                    token={token}
+                    id={modal.booking.id}
+                    initialEmail={modal.booking.email}
+                    initialSentAt={modal.booking.ticket_emailed_at}
                     online={online}
                     autoSend={Boolean(modal.justPaid)}
-                    onSent={(updated) => {
+                    send={async (address) => {
+                      const updated = await emailTicket(token, modal.booking.id, { email: address });
                       replaceBooking(updated);
                       setModal((m) => (m ? { ...m, booking: updated } : m));
+                      return { email: updated.email, sentAt: updated.ticket_emailed_at };
                     }}
                   />
                   <hr />

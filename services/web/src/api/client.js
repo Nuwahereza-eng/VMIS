@@ -107,6 +107,8 @@ export async function syncBatch(token, stationId, operations) {
   return parse(res);
 }
 
+// Resolve anything scanned or typed (visitor QR, VM- code, passport / ID
+// number) to a visitor, server-side. Returns { found, visitor }.
 export async function verifyVisitor(token, payload) {
   const res = await fetch(apiUrl("/visitors/verify"), {
     method: "POST",
@@ -459,6 +461,23 @@ export async function getVisitors(token, { search = "", category = "", limit = 5
 
 // Officer-facing visitor picker (gate/activity/management). Minimal fields, so
 // an activity/accommodation officer can find gate-registered visitors to serve.
+// One visitor from the system of record (fresh details after an edit, or a
+// visitor registered at another station).
+export async function getVisitor(token, visitorId) {
+  const res = await fetch(apiUrl(`/visitors/${visitorId}`), { headers: authHeaders(token) });
+  return parse(res);
+}
+
+// Email a visitor their QR ticket; `email` sets or corrects the address first.
+export async function emailVisitorTicket(token, visitorId, { email } = {}) {
+  const res = await fetch(apiUrl(`/visitors/${visitorId}/email-ticket`), {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify({ email: email || null }),
+  });
+  return parse(res);
+}
+
 export async function lookupVisitors(token, { search = "", limit = 100 } = {}) {
   const params = new URLSearchParams();
   if (search) params.set("search", search);

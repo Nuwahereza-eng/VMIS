@@ -3,17 +3,16 @@ import { useState } from "react";
 import { useApp } from "../context/AppContext.jsx";
 import QrScanner from "../components/QrScanner.jsx";
 import TicketCheckInPanel from "../components/TicketCheckInPanel.jsx";
-import { getBookingByTicket } from "../api/client.js";
-import { verifyLocal } from "../data/repository.js";
+import { getBookingByTicket, verifyVisitor } from "../api/client.js";
+import { findLocalVisitor } from "../data/repository.js";
+import { classifyScan } from "../domain/qr.js";
 import VisitorProfilePage from "./VisitorProfilePage.jsx";
 
 // Full-screen "Scan QR Code" experience matching the mockup: a dark top bar,
 // a live camera view with yellow corner framing, and a caption. A manual entry
 // fallback keeps it usable on devices without a camera or when testing offline.
-// A successful scan/lookup opens the visitor's profile; a booking ticket QR
-// (MF-...) opens the gate check-in / check-out panel instead.
-const TICKET_CODE = /^MF-[A-Z0-9]+$/i;
-
+// A visitor QR, short code (VM-...) or passport number opens the visitor's
+// profile; a booking ticket QR (MF-...) opens the gate check-in panel.
 export default function VerifyPage() {
   const { session, online } = useApp();
   const [scanning, setScanning] = useState(true);
@@ -39,17 +38,29 @@ export default function VerifyPage() {
   }
 
   async function lookup(value) {
-    const text = String(value).trim();
-    if (TICKET_CODE.test(text)) {
-      await lookupTicket(text.toUpperCase());
+    const scan = classifyScan(value);
+    if (scan.kind === "ticket") {
+      await lookupTicket(scan.code);
       return;
     }
     setTicketError(null);
-    const found = await verifyLocal(text);
+    setNotFound(false);
+
+    // This device first (works offline), then the system of record, which
+    // knows visitors registered at other stations and has the latest edits.
+    let found = await findLocalVisitor(scan);
+    if (online) {
+      try {
+        const result = await verifyVisitor(session.token, String(value).trim());
+        if (result?.found && result.visitor) found = { ...(found || {}), ...result.visitor };
+      } catch {
+        /* keep the local match, if any */
+      }
+    }
+
     if (found) {
       setVisitor(found);
       setScanning(false);
-      setNotFound(false);
     } else {
       setNotFound(true);
     }
@@ -135,7 +146,9 @@ export default function VerifyPage() {
 
         {notFound && (
           <div className="alert alert-warning scan__alert">
-            No matching visitor on this device for that code.
+            {online
+              ? "No visitor or ticket matches that code."
+              : "No matching visitor on this device. Connect to search every station."}
           </div>
         )}
 
@@ -150,7 +163,7 @@ export default function VerifyPage() {
         >
           <input
             className="form-control"
-            placeholder="Or enter Visitor ID / ticket code manually"
+            placeholder="Or type a visitor code (VM-…), passport no. or ticket code"
             value={manual}
             onChange={(e) => setManual(e.target.value)}
           />

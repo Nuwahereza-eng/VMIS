@@ -20,9 +20,13 @@ from app.models.enums import Role
 from app.models.user import User
 from app.models.visit import Visit
 from app.models.visitor import Visitor
-from app.qr import InvalidQrPayload, build_qr_payload, parse_qr_payload, render_qr_png
+from app.qr import build_qr_payload, render_qr_png
+from app.mailer import EmailNotConfigured, EmailSendFailed, send_email
 from app.rbac import require_roles
+from app.ticket_email import build_visitor_ticket_email
+from app.visitor_lookup import resolve_visitor
 from app.schemas import (
+    BookingEmailTicket,
     DuplicateMatch,
     RegistrationResult,
     VerifyRequest,
@@ -253,6 +257,55 @@ def get_visitor_qr(
     return Response(content=png, media_type="image/png")
 
 
+@router.post("/{visitor_id}/email-ticket", response_model=VisitorOut)
+def email_visitor_ticket(
+    visitor_id: uuid.UUID,
+    payload: BookingEmailTicket,
+    db: Session = Depends(get_db),
+    officer: User = Depends(_register_roles),
+) -> VisitorOut:
+    """Email a visitor their QR ticket (their visitor QR plus the current
+    entry's gate, ticket number and validity). ``email`` (optional) sets or
+    corrects the address on the visitor record first."""
+    visitor = db.get(Visitor, visitor_id)
+    if visitor is None:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Visitor not found")
+    if payload.email:
+        visitor.email = payload.email
+    if not visitor.email:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            detail="Add the visitor's email address to send the ticket",
+        )
+
+    # The open stay if there is one, otherwise the most recent visit.
+    visit = db.scalar(
+        select(Visit)
+        .where(Visit.visitor_id == visitor.id)
+        .order_by(Visit.exit_timestamp.is_not(None), Visit.entry_timestamp.desc())
+        .limit(1)
+    )
+    try:
+        send_email(build_visitor_ticket_email(visitor, visit))
+    except EmailNotConfigured as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=f"Email isn't set up on this server yet ({exc})",
+        ) from exc
+    except EmailSendFailed as exc:
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
+
+    db.flush()
+    record_audit(
+        db,
+        action="email_ticket",
+        entity_type="visitor",
+        entity_id=str(visitor.id),
+        actor_user_id=officer.id,
+    )
+    return VisitorOut.model_validate(visitor)
+
+
 @router.post("/verify", response_model=VerifyResult)
 def verify_visitor(
     request: VerifyRequest,
@@ -262,15 +315,13 @@ def verify_visitor(
     """Resolve a scanned QR payload to a visitor record.
 
     Online counterpart of the offline check a station performs against its local
-    store. A malformed payload or unknown identifier returns ``found=False``
+    store. Besides the canonical QR payload it accepts a bare visitor id, the
+    short ``VM-`` code and a passport / ID number (see app.visitor_lookup), so a
+    visitor registered at any station can be found from any device. An unknown
+    or ambiguous value returns ``found=False``
     rather than an error, so scanners can show a clear "not recognised" result.
     """
-    try:
-        visitor_id = parse_qr_payload(request.payload)
-    except InvalidQrPayload:
-        return VerifyResult(found=False)
-
-    visitor = db.get(Visitor, visitor_id)
+    visitor = resolve_visitor(db, request.payload)
     if visitor is None:
         return VerifyResult(found=False)
     return VerifyResult(found=True, visitor=VisitorOut.model_validate(visitor))

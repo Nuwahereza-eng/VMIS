@@ -2798,3 +2798,27 @@ table.table { --bs-table-border-color: var(--vmis-line); }
   color: var(--vmis-green-600);
   font-size: 1.4rem;
 }
+
+/* Visitor ticket card on the profile (real QR + entry validity). */
+.visitor-ticket__qr {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 1rem;
+  border: 1px dashed var(--vmis-line);
+  border-radius: var(--vmis-radius-sm);
+  margin: 0.5rem 0 0.75rem;
+}
+.visitor-ticket__qr img { width: 200px; height: 200px; max-width: 100%; }
+.visitor-ticket__qr > i { font-size: 5rem; color: var(--vmis-muted); }
+.visitor-ticket__rows { margin: 0; }
+.visitor-ticket__rows .data-row dt { font-weight: 400; }
+
+.photo-credits {
+  font-size: 0.85rem;
+  color: var(--vmis-muted);
+  padding: 0 0.25rem;
+}
+.photo-credits summary { cursor: pointer; color: var(--vmis-green-700); font-weight: 600; }
+.photo-credits ul { padding-left: 1.1rem; margin: 0; columns: 2 22rem; }
+.photo-credits li { margin-bottom: 0.25rem; break-inside: avoid; }

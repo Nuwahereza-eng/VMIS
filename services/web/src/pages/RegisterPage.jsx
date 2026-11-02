@@ -5,11 +5,13 @@ import { useApp } from "../context/AppContext.jsx";
 import { CATEGORIES } from "../domain/categories.js";
 import { GATES, LODGES } from "../domain/reference.js";
 import { uuid4, visitorCode } from "../domain/ids.js";
+import { visitorQrPayload } from "../domain/qr.js";
 import {
   findDuplicates,
   recordAccommodation,
   recordEntry,
   registerVisitor,
+  updateVisitor,
 } from "../data/repository.js";
 import VisitorQrCode from "../components/VisitorQrCode.jsx";
 
@@ -55,7 +57,7 @@ function formFromVisitor(v) {
 }
 
 export default function RegisterPage() {
-  const { session, refreshOutbox } = useApp();
+  const { session, online, sync, refreshOutbox } = useApp();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -99,22 +101,24 @@ export default function RegisterPage() {
 
     setBusy(true);
     try {
-      const visitor = await registerVisitor(
-        {
-          id: form.id,
-          full_name: form.full_name,
-          id_number: form.id_number,
-          nationality: form.nationality,
-          category: form.category,
-          country: form.nationality,
-          phone: form.phone,
-          email: form.email,
-          tour_company: form.tour_company,
-          vehicle_registration: form.vehicle_registration,
-          privacy_notice_accepted: true,
-        },
-        session.stationId,
-      );
+      const details = {
+        id: form.id,
+        full_name: form.full_name,
+        id_number: form.id_number,
+        nationality: form.nationality,
+        category: form.category,
+        country: form.nationality,
+        phone: form.phone,
+        email: form.email,
+        tour_company: form.tour_company,
+        vehicle_registration: form.vehicle_registration,
+        privacy_notice_accepted: true,
+      };
+      // Editing sends only the changed fields as a visitor_update; a new
+      // registration creates the record.
+      const visitor = isEditing
+        ? (await updateVisitor(editingVisitor, details)).visitor
+        : await registerVisitor(details, session.stationId);
 
       // Editing only updates the visitor's details — no new gate entry. A fresh
       // registration also admits the visitor in one step (per the mockup).
@@ -143,6 +147,11 @@ export default function RegisterPage() {
       }
 
       await refreshOutbox();
+      // Push an edit straight away when online, so the profile and every other
+      // station see the new details now rather than at the next sync.
+      if (isEditing && online) {
+        await sync().catch(() => {});
+      }
       setSaved({
         ...visitor,
         code,
@@ -196,14 +205,16 @@ export default function RegisterPage() {
               <p className="reg__done-name">{saved.full_name}</p>
               <p className="reg__done-sub">
                 {saved.edited
-                  ? "The updated details are queued for sync."
+                  ? online
+                    ? "The updated details are saved."
+                    : "The updated details are saved on this device and will sync when you're back online."
                   : "The visitor has been admitted and queued for sync."}
               </p>
 
               {!saved.edited && (
                 <>
                   <div className="reg__done-qr">
-                    <VisitorQrCode value={saved.id} size={188} />
+                    <VisitorQrCode value={visitorQrPayload(saved.id)} size={188} />
                   </div>
                   <div className="reg__done-code">{saved.code}</div>
                   <div className="reg__done-facts">
@@ -440,7 +451,7 @@ export default function RegisterPage() {
           {/* Column 3 — Visitor preview */}
           <div className="surface-card p-4 reg__preview">
             <h3 className="vp__card-title text-center">VISITOR PREVIEW</h3>
-            <VisitorQrCode value={form.id} size={168} />
+            <VisitorQrCode value={visitorQrPayload(form.id)} size={168} />
             <div className="reg__preview-idlabel">Visitor ID</div>
             <div className="reg__preview-code">{code}</div>
             <button type="submit" className={"btn btn-success w-100 mt-3" + (busy ? " is-busy" : "")} disabled={busy}>

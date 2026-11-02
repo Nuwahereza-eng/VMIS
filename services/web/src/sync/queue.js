@@ -16,6 +16,7 @@ import { syncBatch } from "../api/client.js";
 // their visit and activities applies cleanly in one batch.
 const ENTITY_RANK = {
   visitor: 0,
+  visitor_update: 1,
   visit: 1,
   visitor_activity: 2,
   accommodation: 2,
@@ -23,7 +24,7 @@ const ENTITY_RANK = {
 };
 
 // Append an operation to the outbox. entityId is the target for mutations
-// (visit_exit); for creates the payload carries its own station-generated id.
+// (visit_exit, visitor_update); for creates the payload carries its own station-generated id.
 export async function enqueue(entityType, payload, entityId = null) {
   const op = {
     op_id: uuid4(),

@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 
-import { emailTicket } from "../api/client.js";
 
 function formatTime(value) {
   return new Date(value).toLocaleString(undefined, {
@@ -11,24 +10,25 @@ function formatTime(value) {
   });
 }
 
-// Sends a paid booking's ticket (QR + details) to the visitor's email — their
-// only copy when the booking was made at a gate and they have no account.
-// With `autoSend`, sends once on mount if the booking already has an email.
-export default function EmailTicketForm({ booking, token, online, onSent, autoSend = false }) {
-  const [email, setEmail] = useState(booking.email || "");
+// Emails a ticket (QR + details) to a visitor — their copy when they have no
+// account, e.g. a booking or registration made at a gate. `send(address)` does
+// the request and resolves to { email, sentAt }. With `autoSend`, sends once
+// on mount if an address is already known.
+export default function EmailTicketForm({ id, initialEmail, initialSentAt, send: sendRequest, online, onSent, autoSend = false }) {
+  const [email, setEmail] = useState(initialEmail || "");
   const [sending, setSending] = useState(false);
   const [error, setError] = useState(null);
-  const [sentAt, setSentAt] = useState(booking.ticket_emailed_at || null);
+  const [sentAt, setSentAt] = useState(initialSentAt || null);
   const autoTried = useRef(false);
 
   async function send(address) {
     setSending(true);
     setError(null);
     try {
-      const updated = await emailTicket(token, booking.id, { email: address.trim() });
-      setSentAt(updated.ticket_emailed_at);
-      setEmail(updated.email || address);
-      onSent?.(updated);
+      const result = await sendRequest(address.trim());
+      setSentAt(result.sentAt);
+      setEmail(result.email || address);
+      onSent?.(result);
     } catch (err) {
       setError(err?.message || "Could not send the ticket.");
     } finally {
@@ -37,12 +37,12 @@ export default function EmailTicketForm({ booking, token, online, onSent, autoSe
   }
 
   useEffect(() => {
-    if (autoSend && !autoTried.current && booking.email && online) {
+    if (autoSend && !autoTried.current && initialEmail && online) {
       autoTried.current = true;
-      send(booking.email);
+      send(initialEmail);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [autoSend, booking.email, online]);
+  }, [autoSend, initialEmail, online]);
 
   return (
     <form
@@ -52,12 +52,12 @@ export default function EmailTicketForm({ booking, token, online, onSent, autoSe
         if (email.trim()) send(email);
       }}
     >
-      <label className="form-label small mb-1" htmlFor={`email-${booking.id}`}>
+      <label className="form-label small mb-1" htmlFor={`email-${id}`}>
         <i className="bi bi-envelope" /> Email the ticket to the visitor
       </label>
       <div className="d-flex gap-2">
         <input
-          id={`email-${booking.id}`}
+          id={`email-${id}`}
           type="email"
           className="form-control"
           placeholder="visitor@example.com"

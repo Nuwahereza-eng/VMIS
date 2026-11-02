@@ -30,7 +30,7 @@ the client.
 import json
 import uuid
 
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, Field, ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
@@ -72,6 +72,23 @@ class _VisitorPayload(BaseModel):
     client_created_at: datetime | None = None
 
 
+class _VisitorUpdatePayload(BaseModel):
+    """Edited visitor details. Only the fields present in the payload change;
+    identity (id) and consent are never edited this way."""
+
+    full_name: str | None = Field(default=None, min_length=1, max_length=128)
+    id_number: str | None = Field(default=None, min_length=1, max_length=64)
+    category: VisitorCategory | None = None
+    nationality: str | None = Field(default=None, max_length=64)
+    country: str | None = Field(default=None, max_length=64)
+    phone: str | None = Field(default=None, max_length=32)
+    email: str | None = Field(default=None, max_length=128)
+    tour_company: str | None = Field(default=None, max_length=128)
+    vehicle_registration: str | None = Field(default=None, max_length=32)
+    num_visitors: int | None = Field(default=None, ge=1, le=999)
+    guide_name: str | None = Field(default=None, max_length=128)
+
+
 class _VisitPayload(BaseModel):
     id: uuid.UUID
     visitor_id: uuid.UUID
@@ -110,6 +127,7 @@ class _AccommodationPayload(BaseModel):
 # regardless of the order the client sent them in.
 _ENTITY_RANK = {
     "visitor": 0,
+    "visitor_update": 1,
     "visit": 1,
     "visitor_activity": 2,
     "accommodation": 2,
@@ -231,6 +249,56 @@ def _apply_visit(db: Session, op: SyncOp, station_id: str | None, actor: User) -
     return _OpOutcome("applied", data.id)
 
 
+def _apply_visitor_update(db: Session, op: SyncOp, station_id: str | None, actor: User) -> _OpOutcome:
+    """Apply edited visitor details (last write wins, field by field).
+
+    Required fields (name, ID number, category) can be changed but not blanked.
+    An update for a visitor the server has never seen is kept as an exception
+    for a supervisor rather than dropped.
+    """
+    if op.entity_id is None:
+        _raise_exception(
+            db, station_id=station_id, entity_type="visitor_update", entity_id=None,
+            kind="missing_entity_id", detail=op.payload,
+        )
+        return _OpOutcome("conflict", None, "missing_entity_id")
+
+    data = _VisitorUpdatePayload.model_validate(op.payload)
+    visitor = db.get(Visitor, op.entity_id)
+    if visitor is None:
+        _raise_exception(
+            db, station_id=station_id, entity_type="visitor_update", entity_id=op.entity_id,
+            kind="missing_visitor", detail=op.payload,
+        )
+        return _OpOutcome("conflict", op.entity_id, "missing_visitor")
+
+    required = {"full_name", "id_number", "category"}
+    changed = {}
+    for field in data.model_fields_set:
+        value = getattr(data, field)
+        if field in required and value is None:
+            continue
+        if isinstance(value, str):
+            value = value.strip() or (None if field not in required else getattr(visitor, field))
+        if getattr(visitor, field) != value:
+            changed[field] = value
+            setattr(visitor, field, value)
+
+    if not changed:
+        return _OpOutcome("exists", op.entity_id)
+
+    db.flush()
+    record_audit(
+        db,
+        action="sync_update",
+        entity_type="visitor",
+        entity_id=str(visitor.id),
+        actor_user_id=actor.id,
+        details={"fields": sorted(changed)},
+    )
+    return _OpOutcome("applied", op.entity_id)
+
+
 def _apply_visit_exit(db: Session, op: SyncOp, station_id: str | None, actor: User) -> _OpOutcome:
     if op.entity_id is None:
         _raise_exception(
@@ -350,6 +418,7 @@ def _apply_accommodation(db: Session, op: SyncOp, station_id: str | None, actor:
 
 _HANDLERS = {
     "visitor": _apply_visitor,
+    "visitor_update": _apply_visitor_update,
     "visit": _apply_visit,
     "visit_exit": _apply_visit_exit,
     "visitor_activity": _apply_visitor_activity,

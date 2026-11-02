@@ -58,7 +58,20 @@ export default defineConfig({
         ],
       },
       workbox: {
-        globPatterns: ["**/*.{js,css,html,svg,png,jpg,ico,woff2}"],
+        globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2}"],
+        // Park photos (~3 MB) are cached as they are viewed rather than all
+        // downloaded at install, so a station's first load stays light; once
+        // seen, the park guide shows them offline.
+        runtimeCaching: [
+          {
+            urlPattern: ({ url }) => url.pathname.startsWith("/park/"),
+            handler: "CacheFirst",
+            options: {
+              cacheName: "park-photos",
+              expiration: { maxEntries: 80 },
+            },
+          },
+        ],
         navigateFallback: "index.html",
         // Never cache API calls: the local store is the offline source of
         // truth, not stale HTTP responses.

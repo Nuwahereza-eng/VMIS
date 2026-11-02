@@ -580,6 +580,7 @@ class VisitorChargesSummary(BaseModel):
 # Entity types a station may write offline and later sync.
 SyncEntityType = Literal[
     "visitor",
+    "visitor_update",
     "visit",
     "visit_exit",
     "visitor_activity",

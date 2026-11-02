@@ -2,8 +2,10 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { useApp } from "../context/AppContext.jsx";
+import VisitorTicketCard from "../components/VisitorTicketCard.jsx";
 import {
   getActivities,
+  getVisitor,
   getVisitorAccommodations,
   getVisitorActivities,
   getVisitorScans,
@@ -11,7 +13,7 @@ import {
   getVisitorVisits,
   recordScan,
 } from "../api/client.js";
-import { getMeta, setMeta } from "../db/store.js";
+import { STORES, get, getMeta, setMeta } from "../db/store.js";
 import {
   CATEGORIES,
   CATEGORY_CURRENCY,
@@ -21,6 +23,7 @@ import { computeValidity } from "../domain/tickets.js";
 import {
   visitsForVisitor,
   activitiesForVisitor,
+  hasPendingVisitorUpdate,
   accommodationsForVisitor,
   recordExit,
 } from "../data/repository.js";
@@ -96,8 +99,11 @@ const SCAN_KIND_ICON = {
   exit: "bi-box-arrow-right",
 };
 
-export default function VisitorProfilePage({ visitor, onBack, onScanQr }) {
+export default function VisitorProfilePage({ visitor: initialVisitor, onBack, onScanQr }) {
   const { session, online } = useApp();
+  // The latest details: the server's copy, unless an edit made on this device
+  // is still waiting to upload (then the local copy is newer).
+  const [visitor, setVisitor] = useState(initialVisitor);
   const navigate = useNavigate();
 
   const [tab, setTab] = useState("Overview");
@@ -115,6 +121,30 @@ export default function VisitorProfilePage({ visitor, onBack, onScanQr }) {
   const [scanError, setScanError] = useState("");
 
   const currency = CATEGORY_CURRENCY[visitor.category] || "USD";
+
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const local = await get(STORES.visitors, initialVisitor.id);
+      if (await hasPendingVisitorUpdate(initialVisitor.id)) {
+        if (alive && local) setVisitor((v) => ({ ...v, ...local }));
+        return;
+      }
+      if (online) {
+        try {
+          const fresh = await getVisitor(session.token, initialVisitor.id);
+          if (alive && fresh) setVisitor((v) => ({ ...v, ...fresh }));
+          return;
+        } catch {
+          /* fall back to the local copy */
+        }
+      }
+      if (alive && local) setVisitor((v) => ({ ...v, ...local }));
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [initialVisitor.id, online, session.token]);
 
   // Load this visitor's visits / activities / accommodation from the local
   // store (same source the Verify screen uses), plus the cached fee catalogue.
@@ -406,6 +436,15 @@ export default function VisitorProfilePage({ visitor, onBack, onScanQr }) {
 
         {tab === "Overview" && (
           <div className="vp__grid">
+            <VisitorTicketCard
+              visitor={visitor}
+              visit={heroVisit}
+              validity={heroVisit ? computeValidity(heroVisit.entry_timestamp, heroVisit.nights_purchased) : null}
+              token={session.token}
+              online={online}
+              onVisitorChange={(updated) => setVisitor((v) => ({ ...v, ...updated }))}
+            />
+
             <div className="surface-card p-4">
               <h3 className="vp__card-title">VISITOR INFORMATION</h3>
               <dl className="vp__info">

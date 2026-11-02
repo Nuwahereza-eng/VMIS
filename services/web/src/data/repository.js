@@ -5,7 +5,7 @@
 
 import { STORES, get, getAll, getAllByIndex, put } from "../db/store.js";
 import { enqueue } from "../sync/queue.js";
-import { uuid4 } from "../domain/ids.js";
+import { uuid4, visitorCode } from "../domain/ids.js";
 import { CATEGORY_CURRENCY } from "../domain/categories.js";
 import { lookupVisitors } from "../api/client.js";
 
@@ -87,6 +87,64 @@ export async function serviceableVisitors(token, online, search = "") {
   } catch {
     return local;
   }
+}
+
+// Fields an officer may edit on an existing visitor (mirrors the server's
+// visitor_update payload). Identity and consent are not edited this way.
+const EDITABLE_VISITOR_FIELDS = [
+  "full_name",
+  "id_number",
+  "category",
+  "nationality",
+  "country",
+  "phone",
+  "email",
+  "tour_company",
+  "vehicle_registration",
+  "num_visitors",
+  "guide_name",
+];
+
+// Save edited details for an existing visitor: update the local copy at once
+// and queue a visitor_update for the server (applied field by field). Works
+// offline; the outbox flushes when a connection returns.
+export async function updateVisitor(original, input) {
+  const changes = {};
+  for (const field of EDITABLE_VISITOR_FIELDS) {
+    if (!(field in input)) continue;
+    const value = typeof input[field] === "string" ? input[field].trim() || null : input[field];
+    if ((original[field] ?? null) !== (value ?? null)) changes[field] = value;
+  }
+  const local = (await get(STORES.visitors, original.id)) || { ...original };
+  const record = { ...local, ...changes, updated_locally_at: nowIso() };
+  await put(STORES.visitors, record);
+  if (Object.keys(changes).length > 0) {
+    await enqueue("visitor_update", changes, original.id);
+  }
+  return { visitor: record, changed: Object.keys(changes) };
+}
+
+// True while an edit to this visitor is still waiting in the outbox, so the
+// local copy (not the server's) is the latest truth.
+export async function hasPendingVisitorUpdate(visitorId) {
+  const ops = await getAll(STORES.outbox);
+  return ops.some((op) => op.entity_type === "visitor_update" && op.entity_id === visitorId);
+}
+
+// Find a visitor on this device from a classified scan (see domain/qr.js).
+export async function findLocalVisitor(scan) {
+  if (scan.kind === "visitor") return (await get(STORES.visitors, scan.id)) || null;
+  const all = await getAll(STORES.visitors);
+  if (scan.kind === "code") {
+    const hits = all.filter((v) => visitorCode(v.id) === scan.code);
+    return hits.length === 1 ? hits[0] : null;
+  }
+  if (scan.kind === "text") {
+    const needle = scan.text.toLowerCase();
+    const hits = all.filter((v) => String(v.id_number || "").toLowerCase() === needle);
+    return hits.length === 1 ? hits[0] : null;
+  }
+  return null;
 }
 
 // Offline QR/id verification against the LOCAL record (build prompt section

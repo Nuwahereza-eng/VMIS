@@ -7,10 +7,11 @@
 
 import { GATES, LODGES } from "./reference.js";
 
-// Real photos of the park, served from the app itself (public/park/) so they
-// ship with the PWA and show offline. Only places and animals we actually have
-// a photo of get one; every other card shows its icon and text instead of a
-// stock photo from somewhere else.
+// Real photos of the park, served from the app itself (public/park/) and cached
+// for offline use once viewed. Every photo was taken in Uganda, most inside
+// Murchison Falls NP: the park's own photos plus freely licensed ones from
+// Wikimedia Commons (credited in photoCredits.js). A card without a genuine
+// photo of its subject keeps its icon rather than a picture from elsewhere.
 const PHOTOS = "/park/";
 
 function photo(file) {
@@ -23,7 +24,7 @@ export const HERO_IMAGE = photo("murchison-falls.jpg");
 export const PARK_OVERVIEW = {
   name: "Murchison Falls National Park",
   tagline: "Uganda's largest national park, where the Nile explodes through a narrow gorge.",
-  image: photo("top-of-the-falls.jpg"),
+  image: photo("falls-overview.jpg"),
   summary:
     "Murchison Falls National Park covers about 3,840 km² in north-western Uganda, bisected " +
     "by the Victoria Nile. At its heart the river is forced through a 7-metre gap in the rocks " +
@@ -40,18 +41,18 @@ export const PARK_OVERVIEW = {
 };
 
 export const ANIMALS = [
-  { name: "African elephant", icon: "bi-tsunami", note: "Large herds on the northern savannah." },
-  { name: "Lion", icon: "bi-emoji-neutral", note: "Commonly seen on the Buligi game tracks." },
-  { name: "Rothschild's giraffe", icon: "bi-arrow-up", note: "A key stronghold for the species." },
-  { name: "Cape buffalo", icon: "bi-shield", note: "Found throughout the grasslands." },
+  { name: "African elephant", icon: "bi-tsunami", image: photo("elephant.jpg"), note: "Large herds on the northern savannah." },
+  { name: "Lion", icon: "bi-emoji-neutral", image: photo("lion.jpg"), note: "Commonly seen on the Buligi game tracks." },
+  { name: "Rothschild's giraffe", icon: "bi-arrow-up", image: photo("giraffe.jpg"), note: "A key stronghold for the species." },
+  { name: "Cape buffalo", icon: "bi-shield", image: photo("buffalo.jpg"), note: "Found throughout the grasslands." },
   { name: "Hippopotamus", icon: "bi-water", image: photo("nile-hippos-buffalo.jpg"), note: "Abundant along the Nile and delta." },
-  { name: "Nile crocodile", icon: "bi-badge-wc", note: "Basking along the river banks." },
-  { name: "Leopard", icon: "bi-moon-stars", note: "Elusive, often near riverine forest." },
-  { name: "Uganda kob", icon: "bi-signpost", note: "The most numerous antelope here." },
-  { name: "Hartebeest & oribi", icon: "bi-compass", note: "Typical of the open plains." },
-  { name: "Chimpanzee", icon: "bi-tree", note: "Tracked in nearby Budongo Forest (Kaniyo Pabidi)." },
-  { name: "Shoebill stork", icon: "bi-feather", note: "A birding highlight in the delta." },
-  { name: "450+ bird species", icon: "bi-binoculars", note: "Including fish eagles and bee-eaters." },
+  { name: "Nile crocodile", icon: "bi-badge-wc", image: photo("crocodile.jpg"), note: "Basking along the river banks." },
+  { name: "Leopard", icon: "bi-moon-stars", image: photo("leopard.jpg"), note: "Elusive, often near riverine forest." },
+  { name: "Uganda kob", icon: "bi-signpost", image: photo("uganda-kob.jpg"), note: "The most numerous antelope here." },
+  { name: "Hartebeest & oribi", icon: "bi-compass", image: photo("oribi.jpg"), note: "Typical of the open plains." },
+  { name: "Chimpanzee", icon: "bi-tree", image: photo("chimpanzee.jpg"), note: "Tracked in nearby Budongo Forest (Kaniyo Pabidi)." },
+  { name: "Shoebill stork", icon: "bi-feather", image: photo("shoebill.jpg"), note: "A birding highlight in the delta." },
+  { name: "450+ bird species", icon: "bi-binoculars", image: photo("ground-hornbills.jpg"), note: "Including fish eagles and bee-eaters." },
 ];
 
 export const ATTRACTIONS = [
@@ -73,31 +74,34 @@ export const ATTRACTIONS = [
     name: "Buligi game tracks",
     icon: "bi-signpost-split",
    
+    image: photo("buligi-savanna.jpg"),
     note: "The classic northern savannah circuit between the Nile and Lake Albert.",
   },
   {
     name: "Karuma Falls",
     icon: "bi-water",
    
+    image: photo("karuma-falls.jpg"),
     note: "A series of rapids at the park's eastern edge.",
   },
   {
     name: "Budongo Forest (Kaniyo Pabidi)",
     icon: "bi-tree",
    
+    image: photo("budongo-forest.jpg"),
     note: "Mahogany forest for chimpanzee tracking and forest birding.",
   },
 ];
 
 export const ACTIVITIES = [
-  { name: "Game drives", icon: "bi-truck", note: "Morning, afternoon and night drives on the northern tracks." },
+  { name: "Game drives", icon: "bi-truck", image: photo("game-drive.jpg"), note: "Morning, afternoon and night drives on the northern tracks." },
   { name: "Launch / boat cruise", icon: "bi-water", image: photo("launch-cruise.jpg"), note: "Upstream to the base of the falls, or to the delta." },
   { name: "Top of the Falls hike", icon: "bi-signpost-2", image: photo("top-of-the-falls.jpg"), note: "Walk to the viewpoint above the gorge." },
-  { name: "Chimpanzee tracking", icon: "bi-tree", note: "In Budongo Forest at Kaniyo Pabidi." },
-  { name: "Birdwatching", icon: "bi-binoculars", note: "Over 450 species, shoebill a top target." },
-  { name: "Sport fishing", icon: "bi-bezier", note: "Catch-and-release for Nile perch (permit required)." },
-  { name: "Cultural encounters", icon: "bi-people", note: "Community visits near the park gates." },
-  { name: "Hot air balloon safari", icon: "bi-balloon", note: "Sunrise flights over the savannah." },
+  { name: "Chimpanzee tracking", icon: "bi-tree", image: photo("budongo-trail.jpg"), note: "In Budongo Forest at Kaniyo Pabidi." },
+  { name: "Birdwatching", icon: "bi-binoculars", image: photo("shoebill-uganda.jpg"), note: "Over 450 species, shoebill a top target." },
+  { name: "Sport fishing", icon: "bi-bezier", image: photo("nile-perch.jpg"), note: "Catch-and-release for Nile perch (permit required)." },
+  { name: "Cultural encounters", icon: "bi-people", image: photo("banyoro-dancers.jpg"), note: "Community visits near the park gates." },
+  { name: "Hot air balloon safari", icon: "bi-balloon", image: photo("aerial-falls.jpg"), note: "Sunrise flights over the savannah." },
 ];
 
 // Entry points (gates) with short orientation notes. Gate names come from the
@@ -111,8 +115,15 @@ const GATE_NOTES = {
   "Mubako Gate": "Western access used for some lodge and delta routes.",
 };
 
+// Photos only for gates we have a real picture of.
+const GATE_PHOTOS = {
+  "Kichumbanyobo Gate": photo("kichumbanyobo-gate.jpg"),
+};
+
 export const ENTRY_POINTS = GATES.map((gate) => ({
   name: gate,
+  icon: "bi-door-open",
+  image: GATE_PHOTOS[gate],
   note: GATE_NOTES[gate] || "Park entry point.",
 }));
 
@@ -133,19 +144,25 @@ export const LODGE_PHOTOS = [
   { src: photo("lodge-terrace.jpg"), caption: "Terrace dining" },
 ];
 
+// Photos only for lodges we have a real picture of; the rest stay text.
+const LODGE_CARD_PHOTOS = {
+  "Fort Murchison": photo("fort-murchison-lodge.jpg"),
+};
+
 export const ACCOMMODATION = LODGES.filter((l) => l !== "Outside the park").map((lodge) => ({
   name: lodge,
   icon: "bi-house-door",
+  image: LODGE_CARD_PHOTOS[lodge],
 }));
 
 // Key locations and routes within the park, for orientation and simple maps.
 export const KEY_LOCATIONS = [
-  { name: "Paraa", icon: "bi-geo-alt-fill", note: "Central hub: ferry crossing, park HQ and several lodges." },
-  { name: "Top of the Falls", icon: "bi-water", note: "Viewpoint above the gorge; car park and short trail." },
-  { name: "Buligi Peninsula", icon: "bi-map", note: "Northern game-drive circuit between the Nile and Lake Albert." },
-  { name: "Nile Delta", icon: "bi-tsunami", note: "Where the river enters Lake Albert; boat cruise destination." },
-  { name: "Kaniyo Pabidi", icon: "bi-tree", note: "Budongo Forest site for chimpanzee tracking." },
-  { name: "Karuma Falls", icon: "bi-water", note: "Rapids at the eastern boundary." },
+  { name: "Paraa", icon: "bi-geo-alt-fill", image: photo("paraa-ferry.jpg"), note: "Central hub: ferry crossing, park HQ and several lodges." },
+  { name: "Top of the Falls", icon: "bi-water", image: photo("top-of-the-falls-view.jpg"), note: "Viewpoint above the gorge; car park and short trail." },
+  { name: "Buligi Peninsula", icon: "bi-map", image: photo("buligi-ranger-station.jpg"), note: "Northern game-drive circuit between the Nile and Lake Albert." },
+  { name: "Nile Delta", icon: "bi-tsunami", image: photo("launch-cruise.jpg"), note: "Where the river enters Lake Albert; boat cruise destination." },
+  { name: "Kaniyo Pabidi", icon: "bi-tree", image: photo("budongo-forest.jpg"), note: "Budongo Forest site for chimpanzee tracking." },
+  { name: "Karuma Falls", icon: "bi-water", image: photo("karuma-rapids.jpg"), note: "Rapids at the eastern boundary." },
 ];
 
 export const ROUTES = [
