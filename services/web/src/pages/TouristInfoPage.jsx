@@ -1,4 +1,5 @@
 import PageHeader from "../components/PageHeader.jsx";
+import ParkSlideshow from "../components/ParkSlideshow.jsx";
 import { PHOTO_CREDITS } from "../domain/photoCredits.js";
 import {
   PARK_OVERVIEW,
@@ -99,7 +100,8 @@ function Section({ icon, title, subtitle, children }) {
   );
 }
 
-export default function TouristInfoPage() {
+// The public landing shows the slideshow in its hero, so it opts out here.
+export default function TouristInfoPage({ showSlideshow = true }) {
   return (
     <>
       <PageHeader
@@ -109,23 +111,29 @@ export default function TouristInfoPage() {
       />
 
       <div className="surface-card p-0 mb-3 overflow-hidden">
-        {PARK_OVERVIEW.image ? (
-          <div className="info-banner">
-            <img
-              src={PARK_OVERVIEW.image}
-              alt={PARK_OVERVIEW.name}
-              loading="lazy"
-              onError={(e) => e.currentTarget.parentElement.remove()}
-            />
+        <div className={showSlideshow ? "overview-split" : undefined}>
+          {showSlideshow ? (
+            <ParkSlideshow />
+          ) : PARK_OVERVIEW.image ? (
+            <div className="info-banner">
+              <img
+                src={PARK_OVERVIEW.image}
+                alt={PARK_OVERVIEW.name}
+                loading="lazy"
+                onError={(e) => e.currentTarget.parentElement.remove()}
+              />
+            </div>
+          ) : null}
+          <div className="p-4 overview-split__text">
+            <div className="card-title-row">
+              <i className="bi bi-tree" />
+              <h3>{PARK_OVERVIEW.name}</h3>
+            </div>
+            <p style={{ color: "var(--vmis-ink)", fontWeight: 500 }}>{PARK_OVERVIEW.tagline}</p>
+            <p className="muted mb-0">{PARK_OVERVIEW.summary}</p>
           </div>
-        ) : null}
-        <div className="p-4">
-          <div className="card-title-row">
-            <i className="bi bi-tree" />
-            <h3>{PARK_OVERVIEW.name}</h3>
-          </div>
-          <p style={{ color: "var(--vmis-ink)", fontWeight: 500 }}>{PARK_OVERVIEW.tagline}</p>
-          <p className="muted">{PARK_OVERVIEW.summary}</p>
+        </div>
+        <div className="px-4 pb-4">
           <div className="row g-3 mt-1">
             {PARK_OVERVIEW.facts.map((f) => (
               <div className="col-6 col-md-4 col-xl" key={f.label}>

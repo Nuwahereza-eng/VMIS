@@ -28,3 +28,6 @@ htmlcov/
 node_modules/
 dist/
 build/
+
+# Raw media drops (the app uses resized copies in services/web/public/park)
+videos and slide images/

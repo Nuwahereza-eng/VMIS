@@ -59,12 +59,15 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ["**/*.{js,css,html,svg,png,ico,woff2}"],
-        // Park photos (~3 MB) are cached as they are viewed rather than all
+        // Park photos (~5 MB) are cached as they are viewed rather than all
         // downloaded at install, so a station's first load stays light; once
         // seen, the park guide shows them offline.
         runtimeCaching: [
           {
-            urlPattern: ({ url }) => url.pathname.startsWith("/park/"),
+            // Not the video clips: a service worker needs extra handling for
+            // the range requests browsers use for video, and Safari fails
+            // without it. Offline, the slideshow just skips them.
+            urlPattern: ({ url }) => url.pathname.startsWith("/park/") && !url.pathname.endsWith(".mp4"),
             handler: "CacheFirst",
             options: {
               cacheName: "park-photos",

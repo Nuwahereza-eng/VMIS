@@ -1,6 +1,6 @@
 // Credits for park photos taken from Wikimedia Commons (free licences that
 // require attribution). Shown under the park guide. Keyed by file name in
-// public/park/. Generated from the Commons file pages; do not edit by hand.
+// public/park/. Copied from the Commons file pages.
 
 export const PHOTO_CREDITS = {
   "elephant.jpg": {
@@ -59,13 +59,6 @@ export const PHOTO_CREDITS = {
     "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
     "source": "https://commons.wikimedia.org/wiki/File:An_Oribi_stands_along_the_marram_roadside_in_Murchison_Falls_National_Park,_Uganda.jpg"
   },
-  "chimpanzee.jpg": {
-    "title": "Chimpanzee in Solitude at Uganda’s reserve habitat in Entebbe 01.jpg",
-    "author": "BMKME",
-    "license": "CC0",
-    "licenseUrl": "http://creativecommons.org/publicdomain/zero/1.0/deed.en",
-    "source": "https://commons.wikimedia.org/wiki/File:Chimpanzee_in_Solitude_at_Uganda%E2%80%99s_reserve_habitat_in_Entebbe_01.jpg"
-  },
   "shoebill.jpg": {
     "title": "Shoebil murchison.jpg",
     "author": "Tom Tarrant",
@@ -107,13 +100,6 @@ export const PHOTO_CREDITS = {
     "license": "CC BY-SA 4.0",
     "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
     "source": "https://commons.wikimedia.org/wiki/File:The_Royal_Mile_-_Budongo_Forest_-_Uganda_20190918_081052.jpg"
-  },
-  "budongo-trail.jpg": {
-    "title": "Omukama's Royal mile in Budongo Forest.jpg",
-    "author": "NUWAHWERA PHIONAH",
-    "license": "CC BY-SA 4.0",
-    "licenseUrl": "https://creativecommons.org/licenses/by-sa/4.0",
-    "source": "https://commons.wikimedia.org/wiki/File:Omukama%27s_Royal_mile_in_Budongo_Forest.jpg"
   },
   "game-drive.jpg": {
     "title": "Game DRIVE Uganda Giraffes.jpg",

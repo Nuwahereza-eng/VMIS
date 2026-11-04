@@ -18,8 +18,38 @@ function photo(file) {
   return PHOTOS + file;
 }
 
-// Landing hero and the overview banner on the in-app park-info page.
-export const HERO_IMAGE = photo("murchison-falls.jpg");
+// The autoplaying slideshow: photos and silent 5-second clips (public/park/).
+// `focus` sets which part of a tall photo stays in frame when it is cropped.
+function slide(file, caption, focus) {
+  return { image: photo(`slides/${file}.jpg`), caption, focus };
+}
+
+function clip(file, caption) {
+  return { video: photo(`clips/${file}.mp4`), poster: photo(`clips/${file}.jpg`), caption };
+}
+
+export const PARK_SLIDES = [
+  clip("falls", "Murchison Falls"),
+  slide("leopard", "Leopard", "center 12%"),
+  slide("giraffes-pair", "Rothschild's giraffes"),
+  clip("lion-digging", "A lioness on the hunt"),
+  slide("chimpanzee", "Chimpanzee"),
+  slide("kob-male", "Uganda kob"),
+  clip("giraffes", "Giraffes before the rain"),
+  slide("tree-lions", "Tree-climbing lions"),
+  slide("falls-viewpoint", "The falls from the viewpoint"),
+  clip("hyenas", "Spotted hyena in the long grass"),
+  slide("rhinos", "Rhinos at Ziwa Sanctuary, on the road to the park"),
+  slide("chimpanzees", "A chimpanzee family"),
+  clip("bird", "A francolin on its perch"),
+  slide("lioness", "Lioness in the long grass"),
+  slide("kob-female", "Uganda kob"),
+  slide("giraffes-savanna", "Giraffes on the savannah"),
+  clip("lioness", "Lioness resting in a tree"),
+  slide("lion-roadside", "Lion by the roadside"),
+  slide("falls-panorama", "The Nile above the gorge"),
+  slide("lions-resting", "Lions resting in the bush"),
+];
 
 export const PARK_OVERVIEW = {
   name: "Murchison Falls National Park",
@@ -97,7 +127,7 @@ export const ACTIVITIES = [
   { name: "Game drives", icon: "bi-truck", image: photo("game-drive.jpg"), note: "Morning, afternoon and night drives on the northern tracks." },
   { name: "Launch / boat cruise", icon: "bi-water", image: photo("launch-cruise.jpg"), note: "Upstream to the base of the falls, or to the delta." },
   { name: "Top of the Falls hike", icon: "bi-signpost-2", image: photo("top-of-the-falls.jpg"), note: "Walk to the viewpoint above the gorge." },
-  { name: "Chimpanzee tracking", icon: "bi-tree", image: photo("budongo-trail.jpg"), note: "In Budongo Forest at Kaniyo Pabidi." },
+  { name: "Chimpanzee tracking", icon: "bi-tree", image: photo("chimpanzees-group.jpg"), note: "In Budongo Forest at Kaniyo Pabidi." },
   { name: "Birdwatching", icon: "bi-binoculars", image: photo("shoebill-uganda.jpg"), note: "Over 450 species, shoebill a top target." },
   { name: "Sport fishing", icon: "bi-bezier", image: photo("nile-perch.jpg"), note: "Catch-and-release for Nile perch (permit required)." },
   { name: "Cultural encounters", icon: "bi-people", image: photo("banyoro-dancers.jpg"), note: "Community visits near the park gates." },

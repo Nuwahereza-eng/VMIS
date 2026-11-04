@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 
 import TouristInfoPage from "./TouristInfoPage.jsx";
-import { HERO_IMAGE } from "../domain/parkInfo.js";
+import ParkSlideshow from "../components/ParkSlideshow.jsx";
 
 // The public landing: explore the park freely, then a clear call to create an
 // account and book. The information itself is the same content officers and
@@ -9,14 +9,8 @@ import { HERO_IMAGE } from "../domain/parkInfo.js";
 export default function PublicParkInfoPage() {
   return (
     <>
-      <div
-        className="public-hero public-hero--photo"
-        style={{
-          backgroundImage:
-            `linear-gradient(135deg, rgba(21,99,63,0.82), rgba(12,74,44,0.82)), url(${HERO_IMAGE})`,
-        }}
-      >
-        <div>
+      <div className="public-hero public-hero--split">
+        <div className="public-hero__text">
           <h1>Plan your visit to Murchison Falls</h1>
           <p>
             Explore the park's wildlife, attractions, activities and entry
@@ -31,9 +25,10 @@ export default function PublicParkInfoPage() {
             </Link>
           </div>
         </div>
+        <ParkSlideshow />
       </div>
 
-      <TouristInfoPage />
+      <TouristInfoPage showSlideshow={false} />
 
       <div className="surface-card p-4 text-center">
         <h3 className="mb-2" style={{ color: "var(--vmis-ink)" }}>
