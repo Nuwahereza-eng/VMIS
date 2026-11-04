@@ -4,6 +4,7 @@ import PublicLayout from "./components/PublicLayout.jsx";
 import PublicParkInfoPage from "./pages/PublicParkInfoPage.jsx";
 import LoginPage from "./pages/LoginPage.jsx";
 import SignupPage from "./pages/SignupPage.jsx";
+import TouristInfoPage from "./pages/TouristInfoPage.jsx";
 
 // Routing for visitors who are not signed in. They can explore park
 // information freely; signing in or creating an account unlocks booking. Auth
@@ -17,8 +18,16 @@ export default function PublicApp() {
       <Route
         path="/"
         element={
-          <PublicLayout>
+          <PublicLayout overlay>
             <PublicParkInfoPage />
+          </PublicLayout>
+        }
+      />
+      <Route
+        path="/guide"
+        element={
+          <PublicLayout>
+            <TouristInfoPage showSlideshow={false} />
           </PublicLayout>
         }
       />

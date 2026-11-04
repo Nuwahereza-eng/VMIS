@@ -49,6 +49,20 @@ export const PARK_SLIDES = [
   slide("lion-roadside", "Lion by the roadside"),
   slide("falls-panorama", "The Nile above the gorge"),
   slide("lions-resting", "Lions resting in the bush"),
+  clip("shoebill", "Shoebill"),
+  slide("falls-gorge", "Murchison Falls through the gorge"),
+  slide("lion-pride", "A pride at dusk"),
+  clip("lioness-snarl", "Lioness"),
+  slide("giraffes-herd", "Giraffes in the woodland"),
+  slide("falls-aerial", "The falls from above"),
+  clip("hyenas-bush", "Spotted hyena on the prowl"),
+  slide("giraffe-calves", "Giraffe calves"),
+  clip("lion-hunt", "The catch"),
+  slide("giraffes-tall", "Rothschild's giraffes"),
+  clip("giraffes-close", "Giraffes"),
+  slide("lion-tongue", "Lion, up close"),
+  clip("rangers", "Park rangers"),
+  slide("lioness-feeding", "Lioness after the kill"),
 ];
 
 export const PARK_OVERVIEW = {

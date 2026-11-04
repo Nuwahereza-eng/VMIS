@@ -1,5 +1,6 @@
 import PageHeader from "../components/PageHeader.jsx";
 import ParkSlideshow from "../components/ParkSlideshow.jsx";
+import PhotoCredits from "../components/PhotoCredits.jsx";
 import { PHOTO_CREDITS } from "../domain/photoCredits.js";
 import {
   PARK_OVERVIEW,
@@ -100,7 +101,7 @@ function Section({ icon, title, subtitle, children }) {
   );
 }
 
-// The public landing shows the slideshow in its hero, so it opts out here.
+// The slideshow is for the signed-in page; the public guide keeps the banner.
 export default function TouristInfoPage({ showSlideshow = true }) {
   return (
     <>
@@ -245,30 +246,9 @@ export default function TouristInfoPage({ showSlideshow = true }) {
         </ul>
       </div>
 
-      <details className="photo-credits mt-3">
-        <summary>Photo credits</summary>
-        <p className="muted small mb-2">
-          Photos taken in Uganda by the park team and by photographers on Wikimedia Commons, used
-          under the licences below.
-        </p>
-        <ul>
-          {Object.entries(PHOTO_CREDITS).map(([file, c]) => (
-            <li key={file}>
-              <a href={c.source} target="_blank" rel="noreferrer">
-                {c.title.replace(/\.[a-z]+$/i, "")}
-              </a>{" "}
-              by {c.author} ·{" "}
-              {c.licenseUrl ? (
-                <a href={c.licenseUrl} target="_blank" rel="noreferrer">
-                  {c.license}
-                </a>
-              ) : (
-                c.license
-              )}
-            </li>
-          ))}
-        </ul>
-      </details>
+      <div className="mt-3">
+        <PhotoCredits />
+      </div>
     </>
   );
 }
