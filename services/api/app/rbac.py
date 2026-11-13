@@ -6,6 +6,7 @@ loads the account; ``require_roles`` builds a dependency that rejects any
 caller whose role is not in the allowed set.
 """
 
+import enum
 import uuid
 from collections.abc import Callable
 
@@ -55,6 +56,39 @@ def require_roles(*allowed: Role) -> Callable[[User], User]:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Insufficient role for this action",
+            )
+        return current_user
+
+    return _dependency
+
+
+# --- Permissions (finer than roles) ---
+#
+# Most endpoints gate on roles. Where the data is sensitive enough to need its
+# own switch, a named permission is granted to roles here and checked on the
+# server with ``require_permission``.
+
+
+class Permission(str, enum.Enum):
+    # See where visitors are (tour tracking live view, paths, busy areas).
+    VIEW_VISITOR_LOCATIONS = "view_visitor_locations"
+
+
+ROLE_PERMISSIONS: dict[Role, frozenset[Permission]] = {
+    Role.MANAGEMENT: frozenset({Permission.VIEW_VISITOR_LOCATIONS}),
+}
+
+
+def has_permission(user: User, permission: Permission) -> bool:
+    return permission in ROLE_PERMISSIONS.get(user.role, frozenset())
+
+
+def require_permission(permission: Permission) -> Callable[[User], User]:
+    def _dependency(current_user: User = Depends(get_current_user)) -> User:
+        if not has_permission(current_user, permission):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"Missing permission: {permission.value}",
             )
         return current_user
 

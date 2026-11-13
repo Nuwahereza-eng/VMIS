@@ -14,6 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.models.activity import Activity, ActivityRate
 from app.models.config import Facility, Gate
+from app.models.tracking import PointOfInterest
 from app.models.enums import CATEGORY_CURRENCY, VisitorCategory
 
 _DEFAULT_FIXTURE = Path(__file__).parent / "seeds" / "tariff_dev.json"
@@ -103,3 +104,33 @@ def seed_facilities(db: Session) -> int:
         db.add(Facility(name=name, is_active=True))
     db.commit()
     return len(_DEFAULT_FACILITIES)
+
+
+# Placeholder points of interest. Real names, coordinates and opening hours must
+# be supplied by the park: nothing here is real. They are inactive and sit at
+# 0,0 so they can never trigger a visitor alert until management replaces them.
+_PLACEHOLDER_POIS = [
+    ("PLACEHOLDER facility (replace with a real entry)", "facility"),
+    ("PLACEHOLDER activity (replace with a real entry)", "activity"),
+]
+
+
+def seed_points_of_interest(db: Session) -> int:
+    """Insert placeholder points of interest only when the table is empty."""
+    if db.scalar(select(func.count()).select_from(PointOfInterest)):
+        return 0
+    for name, kind in _PLACEHOLDER_POIS:
+        db.add(
+            PointOfInterest(
+                name=name,
+                kind=kind,
+                description="Placeholder seed entry. Replace the name, location and hours with real data, then activate.",
+                latitude=0.0,
+                longitude=0.0,
+                radius_m=150,
+                opening_hours=None,
+                is_active=False,
+            )
+        )
+    db.commit()
+    return len(_PLACEHOLDER_POIS)

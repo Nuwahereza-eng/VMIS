@@ -3247,3 +3247,76 @@ table.table { --bs-table-border-color: var(--vmis-line); }
   .public-topbar--overlay .public-brand__sub { display: none; }
   .public-topbar--overlay .public-nav { flex-wrap: nowrap; }
 }
+
+/* ---------- Visitor tour page (on the visitor's own phone) ---------- */
+.tour-page {
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 0.75rem 1rem 2rem;
+  min-height: 100vh;
+  background: var(--vmis-bg);
+}
+.tour-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.5rem 0 0.9rem;
+}
+.tour-head img { border-radius: 8px; }
+.tour-head__park { font-weight: 800; color: var(--vmis-ink); line-height: 1.1; font-size: 0.95rem; }
+.tour-head__sub { font-size: 0.8rem; color: var(--vmis-muted); }
+.tour-card {
+  background: var(--vmis-surface);
+  border: 1px solid var(--vmis-line);
+  border-radius: var(--vmis-radius);
+  box-shadow: var(--vmis-shadow-sm);
+  padding: 1.1rem;
+  margin-bottom: 0.9rem;
+}
+.tour-card h2 { font-size: 1.3rem; font-weight: 800; color: var(--vmis-ink); }
+.tour-h3 { font-size: 1rem; font-weight: 800; color: var(--vmis-ink); margin-bottom: 0.6rem; }
+.tour-list { padding-left: 1.1rem; }
+.tour-facts { list-style: none; padding: 0; margin: 0 0 1rem; font-size: 0.9rem; }
+.tour-facts li { display: flex; gap: 0.5rem; padding: 0.3rem 0; color: var(--vmis-body); }
+.tour-facts i { color: var(--vmis-green-600); }
+.tour-remaining { margin-top: 0.6rem; font-weight: 700; color: var(--vmis-green-700); }
+.tour-alert {
+  background: var(--vmis-gold-100);
+  border: 1px solid var(--vmis-gold-500);
+  border-radius: var(--vmis-radius);
+  padding: 0.9rem 1rem;
+  margin-bottom: 0.9rem;
+  color: var(--vmis-ink);
+  animation: park-slide-in 0.4s ease;
+}
+.tour-pois { list-style: none; padding: 0; margin: 0; }
+.tour-pois li {
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  gap: 0.6rem;
+  align-items: start;
+  padding: 0.6rem 0;
+  border-top: 1px solid var(--vmis-line);
+}
+.tour-pois li:first-child { border-top: 0; }
+.tour-pois i { color: var(--vmis-green-600); margin-top: 0.15rem; }
+.tour-pois__dist { font-weight: 700; color: var(--vmis-green-700); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.osm-map {
+  position: relative;
+  border-radius: var(--vmis-radius);
+  overflow: hidden;
+  border: 1px solid var(--vmis-line);
+  background: var(--vmis-bg-2);
+}
+.osm-map__canvas { position: absolute; inset: 0; }
+.osm-map__offline {
+  position: absolute;
+  inset: auto 0 0 0;
+  z-index: 500;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.85rem;
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--vmis-body);
+}
+.tour-link-qr { text-align: center; }

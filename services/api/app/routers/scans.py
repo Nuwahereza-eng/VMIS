@@ -20,6 +20,7 @@ from app.models.scan import ScanEvent
 from app.models.user import User
 from app.models.visitor import Visitor
 from app.rbac import require_roles
+from app.tracking import close_sessions_for_visitor_exit
 from app.schemas import ScanCreate, ScanOut, ScanResult, VisitorStatusOut
 from app.visitor_status import _scan_out, compute_status, latest_open_visit
 
@@ -74,6 +75,9 @@ def record_scan(
     )
     db.add(scan)
     db.flush()
+    # An exit scan means the visitor has left: tour tracking stops.
+    if scan.kind == ScanKind.EXIT:
+        close_sessions_for_visitor_exit(db, visitor_id, scan.scanned_at)
     record_audit(
         db,
         action="create",

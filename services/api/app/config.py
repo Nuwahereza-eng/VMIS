@@ -65,6 +65,19 @@ class Settings(BaseSettings):
     # tokens, not cookies, so credentialed CORS is not required.
     cors_allow_origins: str = "*"
 
+    # Visitor tour tracking. The phone records a location point once the visitor
+    # has moved this far or this long has passed, and does not repeat a nearby
+    # alert for the same point within the repeat window. Location points are
+    # personal data, deleted after their own retention period. A session with
+    # no location update for longer than the stale threshold raises an alert.
+    tracking_min_distance_m: int = 100
+    tracking_min_interval_s: int = 120
+    poi_repeat_minutes: int = 60
+    location_retention_days: int = 30
+    tracking_stale_minutes: int = 30
+    # How often the location retention job runs while the server is up.
+    location_retention_interval_hours: int = 24
+
     # Outbound email (ticket delivery for bookings captured at a gate, whose
     # visitors have no account to open the app with). Backends:
     #   none    - email is off; sending reports "not configured" (default)

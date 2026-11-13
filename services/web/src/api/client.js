@@ -510,3 +510,92 @@ export async function downloadReportCsv(token, { granularity = "monthly", start 
   if (!res.ok) throw new ApiError(res.status, res.statusText);
   return res.blob();
 }
+
+// --- Visitor tour tracking ---
+//
+// The visitor's phone never uses a staff login: it holds a token for one
+// ticket. Staff endpoints for locations need the view_visitor_locations
+// permission (management).
+
+function tourHeaders(tourToken) {
+  return tourToken
+    ? { Authorization: `Bearer ${tourToken}`, "Content-Type": "application/json" }
+    : { "Content-Type": "application/json" };
+}
+
+// Link this phone to a ticket: by visitor token, or by an identifier (visitor
+// QR, booking code, or VM- code with ID number). Returns token, session,
+// ticket summary, points of interest and sampling settings.
+export async function tourLink(body, tourToken) {
+  const res = await fetchWithTimeout(apiUrl("/tour/link"), {
+    method: "POST",
+    headers: tourHeaders(tourToken),
+    body: JSON.stringify(body),
+  });
+  return parse(res);
+}
+
+export async function tourSession(tourToken) {
+  const res = await fetchWithTimeout(apiUrl("/tour/session"), { headers: tourHeaders(tourToken) });
+  return parse(res);
+}
+
+export async function tourSync(tourToken, operations) {
+  const res = await fetchWithTimeout(apiUrl("/tour/sync"), {
+    method: "POST",
+    headers: tourHeaders(tourToken),
+    body: JSON.stringify({ operations }),
+  });
+  return parse(res);
+}
+
+// Staff: a signed link for one visitor's or booking's ticket (shown as a QR).
+export async function mintTourToken(token, { visitorId, bookingId }) {
+  const res = await fetch(apiUrl("/tracking/tour-token"), {
+    method: "POST",
+    headers: authHeaders(token),
+    body: JSON.stringify({ visitor_id: visitorId || null, booking_id: bookingId || null }),
+  });
+  return parse(res);
+}
+
+export async function getLivePositions(token, { gate, category, minAge, maxAge } = {}) {
+  const params = new URLSearchParams();
+  if (gate) params.set("gate", gate);
+  if (category) params.set("category", category);
+  if (minAge != null && minAge !== "") params.set("min_age_minutes", String(minAge));
+  if (maxAge != null && maxAge !== "") params.set("max_age_minutes", String(maxAge));
+  const qs = params.toString();
+  const res = await fetch(apiUrl(`/tracking/live${qs ? `?${qs}` : ""}`), { headers: authHeaders(token) });
+  return parse(res);
+}
+
+export async function getSessionPath(token, sessionId) {
+  const res = await fetch(apiUrl(`/tracking/sessions/${sessionId}/path`), { headers: authHeaders(token) });
+  return parse(res);
+}
+
+export async function getPoiSummary(token) {
+  const res = await fetch(apiUrl("/tracking/poi-summary"), { headers: authHeaders(token) });
+  return parse(res);
+}
+
+export async function getPois(token) {
+  const res = await fetch(apiUrl("/tracking/pois"), { headers: authHeaders(token) });
+  return parse(res);
+}
+
+export async function createPoi(token, poi) {
+  const res = await fetch(apiUrl("/tracking/pois"), { method: "POST", headers: authHeaders(token), body: JSON.stringify(poi) });
+  return parse(res);
+}
+
+export async function updatePoi(token, poiId, changes) {
+  const res = await fetch(apiUrl(`/tracking/pois/${poiId}`), { method: "PATCH", headers: authHeaders(token), body: JSON.stringify(changes) });
+  return parse(res);
+}
+
+export async function deletePoi(token, poiId) {
+  const res = await fetch(apiUrl(`/tracking/pois/${poiId}`), { method: "DELETE", headers: authHeaders(token) });
+  if (!res.ok) await parse(res);
+}

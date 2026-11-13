@@ -6,6 +6,7 @@ import { CATEGORIES } from "../domain/categories.js";
 import { visitorCode } from "../domain/ids.js";
 import { visitorQrPayload } from "../domain/qr.js";
 import EmailTicketForm from "./EmailTicketForm.jsx";
+import TourLinkQr from "./TourLinkQr.jsx";
 
 const CATEGORY_LABEL = Object.fromEntries(CATEGORIES.map((c) => [c.code, c.label]));
 
@@ -129,6 +130,8 @@ export default function VisitorTicketCard({ visitor, visit, validity, token, onl
         </button>
       </div>
 
+      <hr />
+      <TourLinkQr visitorId={visitor.id} token={token} online={online} />
       <hr />
       <EmailTicketForm
         id={visitor.id}

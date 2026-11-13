@@ -20,6 +20,8 @@ const API_PREFIXES = [
   "/management",
   "/bookings",
   "/config",
+  "/tour",
+  "/tracking",
   "/health",
 ];
 
@@ -78,7 +80,7 @@ export default defineConfig({
         navigateFallback: "index.html",
         // Never cache API calls: the local store is the offline source of
         // truth, not stale HTTP responses.
-        navigateFallbackDenylist: [/^\/(auth|users|visitors|visits|activities|accommodations|charges|sync|management)/],
+        navigateFallbackDenylist: [/^\/(auth|users|visitors|visits|activities|accommodations|charges|sync|management|tracking)/],
       },
       devOptions: {
         enabled: false,

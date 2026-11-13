@@ -641,8 +641,8 @@ class SyncExceptionOut(BaseModel):
 
 class AlertOut(BaseModel):
     kind: str
-    visit_id: uuid.UUID
-    visitor_id: uuid.UUID
+    visit_id: uuid.UUID | None
+    visitor_id: uuid.UUID | None
     entry_gate: str
     entry_timestamp: datetime
     detail: str
@@ -652,6 +652,8 @@ class AlertOut(BaseModel):
     ticket_number: str | None = None
     nights_purchased: int | None = None
     expiry_timestamp: datetime | None = None
+    # Set on tour-tracking alerts.
+    session_id: uuid.UUID | None = None
 
 
 class CountOut(BaseModel):
@@ -755,3 +757,162 @@ class RetentionResultOut(BaseModel):
     cutoff: datetime
     redacted: int
     retention_days: int
+
+
+# --- Visitor tour tracking ---
+
+PoiKind = Literal["facility", "activity"]
+
+
+class PoiBase(BaseModel):
+    name: str = Field(min_length=1, max_length=128)
+    kind: PoiKind
+    description: str | None = Field(default=None, max_length=2000)
+    latitude: float = Field(ge=-90, le=90)
+    longitude: float = Field(ge=-180, le=180)
+    radius_m: int = Field(default=150, ge=10, le=20000)
+    opening_hours: str | None = Field(default=None, max_length=128)
+    is_active: bool = True
+    activity_id: uuid.UUID | None = None
+
+
+class PoiCreate(PoiBase):
+    pass
+
+
+class PoiUpdate(BaseModel):
+    name: str | None = Field(default=None, min_length=1, max_length=128)
+    kind: PoiKind | None = None
+    description: str | None = Field(default=None, max_length=2000)
+    latitude: float | None = Field(default=None, ge=-90, le=90)
+    longitude: float | None = Field(default=None, ge=-180, le=180)
+    radius_m: int | None = Field(default=None, ge=10, le=20000)
+    opening_hours: str | None = Field(default=None, max_length=128)
+    is_active: bool | None = None
+    activity_id: uuid.UUID | None = None
+
+
+class PoiOut(PoiBase):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    updated_at: datetime
+
+
+class TourSettingsOut(BaseModel):
+    min_distance_m: int
+    min_interval_s: int
+    poi_repeat_minutes: int
+
+
+class TourTicketOut(BaseModel):
+    kind: str
+    holder_name: str
+    category: str | None
+    gate: str | None
+    ticket_code: str | None
+    entered_at: datetime | None
+    nights: int
+    expires_at: datetime | None
+    ended_at: datetime | None
+    end_reason: str | None
+
+
+class TourSessionOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    gate: str | None
+    started_at: datetime
+    ended_at: datetime | None
+    end_reason: str | None
+    consent_given: bool
+    consent_at: datetime | None
+
+
+class TourLinkRequest(BaseModel):
+    """Link a phone to a ticket. Either a visitor token (Authorization header,
+    from a per-visitor QR) or an identifier: a visitor QR, booking ticket code,
+    or a short visitor code together with the visitor's ID number. A phone that
+    linked offline also sends the session id, start time and consent it used."""
+
+    identifier: str | None = Field(default=None, max_length=128)
+    id_number: str | None = Field(default=None, max_length=64)
+    gate: str | None = Field(default=None, max_length=128)
+    session_id: uuid.UUID | None = None
+    started_at: datetime | None = None
+    consent_given: bool | None = None
+    consent_at: datetime | None = None
+
+
+class TourStateOut(BaseModel):
+    token: str
+    token_expires_at: datetime
+    session: TourSessionOut
+    ticket: TourTicketOut
+    points_of_interest: list[PoiOut]
+    settings: TourSettingsOut
+
+
+class TourSyncOp(BaseModel):
+    op_id: uuid.UUID
+    entity_type: Literal["session_consent", "location_point", "poi_alert"]
+    entity_id: uuid.UUID | None = None
+    payload: dict = Field(default_factory=dict)
+
+
+class TourSyncRequest(BaseModel):
+    operations: list[TourSyncOp] = Field(default_factory=list, max_length=1000)
+
+
+class TourTokenRequest(BaseModel):
+    """Staff mint a per-visitor tour link for a walk-in visitor or a booking."""
+
+    visitor_id: uuid.UUID | None = None
+    booking_id: uuid.UUID | None = None
+
+
+class TourTokenOut(BaseModel):
+    token: str
+    expires_at: datetime
+
+
+class LivePositionOut(BaseModel):
+    session_id: uuid.UUID
+    ticket_kind: str
+    visitor_id: uuid.UUID | None
+    holder_name: str
+    category: str | None
+    gate: str | None
+    started_at: datetime
+    consent_given: bool
+    latitude: float | None
+    longitude: float | None
+    accuracy: float | None
+    last_update_at: datetime | None
+    # Seconds since the last location reached the server's record (the phone
+    # may have been offline, so a position can be old).
+    age_seconds: int | None
+    stale: bool
+
+
+class PathPointOut(BaseModel):
+    latitude: float
+    longitude: float
+    accuracy: float | None
+    recorded_at: datetime
+
+
+class SessionPathOut(BaseModel):
+    session: LivePositionOut
+    points: list[PathPointOut]
+
+
+class PoiBusyOut(BaseModel):
+    poi_id: uuid.UUID
+    name: str
+    kind: str
+    latitude: float
+    longitude: float
+    radius_m: int
+    visitors_near: int

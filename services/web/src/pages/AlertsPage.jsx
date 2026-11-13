@@ -47,6 +47,13 @@ const ALERT_META = {
     sev: "info",
     action: "Review the open stays and close the erroneous one.",
   },
+  tracking_stale: {
+    label: "No recent location",
+    icon: "bi-broadcast",
+    cls: "warn",
+    sev: "warning",
+    action: "The visitor's phone has gone quiet (offline, off, or page closed). Check their last position.",
+  },
 };
 
 const SEV_RANK = { critical: 0, warning: 1, info: 2 };
@@ -126,6 +133,10 @@ export default function AlertsPage() {
   // their profile, pre-filtered by name so management lands on the right record.
   const openVisitor = useCallback(
     (a) => {
+      if (a.kind === "tracking_stale") {
+        navigate("/live-tracking", { state: { sessionId: a.session_id } });
+        return;
+      }
       navigate("/visitors", {
         state: { search: a.visitor_name || "", openVisitorId: a.visitor_id },
       });

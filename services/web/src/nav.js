@@ -83,6 +83,22 @@ export const NAV_ITEMS = [
     showAlerts: true,
   },
   {
+    to: "/live-tracking",
+    label: "Live Tracking",
+    icon: "bi-broadcast",
+    title: "Live tracking",
+    subtitle: "Visitors on tour and where their phones last reported",
+    roles: ["management"],
+  },
+  {
+    to: "/points-of-interest",
+    label: "Points of Interest",
+    icon: "bi-pin-map",
+    title: "Points of interest",
+    subtitle: "Facilities and activities visitors are alerted about",
+    roles: ["management"],
+  },
+  {
     to: "/reports",
     label: "Reports",
     icon: "bi-file-earmark-bar-graph",

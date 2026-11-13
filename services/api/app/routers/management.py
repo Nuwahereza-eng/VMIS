@@ -97,6 +97,7 @@ def get_alerts(
             ticket_number=a.ticket_number,
             nights_purchased=a.nights_purchased,
             expiry_timestamp=a.expiry_timestamp,
+            session_id=a.session_id,
         )
         for a in compute_alerts(db)
     ]

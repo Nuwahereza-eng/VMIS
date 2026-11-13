@@ -34,6 +34,7 @@ from pydantic import BaseModel, Field, ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app import tracking
 from app.audit import record_audit
 from app.fees import RateNotFound, quote_activity_fee
 from app.models.activity import Activity
@@ -339,6 +340,8 @@ def _apply_visit_exit(db: Session, op: SyncOp, station_id: str | None, actor: Us
     visit.exit_gate = data.exit_gate
     visit.exit_timestamp = data.exit_timestamp
     db.flush()
+    # Tour tracking stops at exit.
+    tracking.close_sessions_for_ticket(db, tracking.TICKET_VISIT, visit.id, visit.exit_timestamp, tracking.END_EXIT)
     record_audit(db, action="sync_update", entity_type="visit", entity_id=str(visit.id), actor_user_id=actor.id)
     return _OpOutcome("applied", op.entity_id)
 
@@ -427,10 +430,44 @@ _HANDLERS = {
 
 
 def apply_batch(db: Session, request: SyncBatchRequest, actor: User) -> SyncBatchResult:
+    return _apply_operations(db, request.operations, request.station_id, _HANDLERS, _ENTITY_RANK, actor)
+
+
+# --- Visitor tour uploads (tracking feature) --------------------------------
+#
+# A visitor's phone queues its consent changes, location points and nearby
+# alerts in the same outbox and uploads them through this same engine: same
+# op_id log, same idempotent replay. Only these entity types are accepted from a
+# visitor, and each handler checks the operation belongs to the token's ticket.
+
+def _tour(fn):
+    def handler(db, op, station_id, ctx):
+        return fn(db, op, station_id, ctx, _OpOutcome)
+
+    return handler
+
+
+_TOUR_HANDLERS = {
+    "session_consent": _tour(tracking.apply_session_consent),
+    "location_point": _tour(tracking.apply_location_point),
+    "poi_alert": _tour(tracking.apply_poi_alert),
+}
+
+# Consent before the points it governs.
+_TOUR_RANK = {"session_consent": 0, "location_point": 1, "poi_alert": 1}
+
+TOUR_STATION = "visitor-phone"
+
+
+def apply_tour_batch(db: Session, operations, ctx: "tracking.TourContext") -> SyncBatchResult:
+    return _apply_operations(db, operations, TOUR_STATION, _TOUR_HANDLERS, _TOUR_RANK, ctx)
+
+
+def _apply_operations(db: Session, operations, station_id, handlers, ranks, actor) -> SyncBatchResult:
     results: list[SyncOpResult] = []
 
     # Stable sort by dependency rank so parents apply before children in-batch.
-    ordered = sorted(request.operations, key=lambda o: _ENTITY_RANK.get(o.entity_type, 99))
+    ordered = sorted(operations, key=lambda o: ranks.get(o.entity_type, 99))
 
     for op in ordered:
         # Idempotent replay: an op_id already processed is skipped entirely.
@@ -440,12 +477,12 @@ def apply_batch(db: Session, request: SyncBatchRequest, actor: User) -> SyncBatc
             )
             continue
 
-        handler = _HANDLERS[op.entity_type]
+        handler = handlers[op.entity_type]
         try:
-            outcome = handler(db, op, request.station_id, actor)
+            outcome = handler(db, op, station_id, actor)
         except ValidationError:
             _raise_exception(
-                db, station_id=request.station_id, entity_type=op.entity_type, entity_id=op.entity_id,
+                db, station_id=station_id, entity_type=op.entity_type, entity_id=op.entity_id,
                 kind="invalid_payload", detail=op.payload,
             )
             outcome = _OpOutcome("conflict", op.entity_id, "invalid_payload")
@@ -453,7 +490,7 @@ def apply_batch(db: Session, request: SyncBatchRequest, actor: User) -> SyncBatc
         db.add(
             SyncOperation(
                 op_id=op.op_id,
-                station_id=request.station_id,
+                station_id=station_id,
                 entity_type=op.entity_type,
                 entity_id=str(outcome.entity_id) if outcome.entity_id else None,
                 result=outcome.result,

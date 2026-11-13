@@ -34,6 +34,7 @@ from app.schemas import (
     ExpectedDay,
 )
 from app.ticket_email import build_ticket_email
+from app.tracking import END_EXIT, TICKET_BOOKING, close_sessions_for_ticket
 from app.tickets import make_payment_reference, make_ticket_code
 
 router = APIRouter(prefix="/bookings", tags=["bookings"])
@@ -252,6 +253,8 @@ def check_out_ticket(
 
     booking.departed_at = utcnow()
     db.flush()
+    # Tour tracking stops at exit.
+    close_sessions_for_ticket(db, TICKET_BOOKING, booking.id, booking.departed_at, END_EXIT)
     record_audit(
         db,
         action="check_out",

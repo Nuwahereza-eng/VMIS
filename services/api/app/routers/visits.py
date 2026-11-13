@@ -20,6 +20,7 @@ from app.models.user import User
 from app.models.visit import Visit
 from app.models.visitor import Visitor
 from app.rbac import require_roles
+from app.tracking import END_EXIT, TICKET_VISIT, close_sessions_for_ticket
 from app.schemas import EntryCreate, EntryResult, ExitCreate, TicketInfo, VisitOut
 from app.tickets import compute_validity
 
@@ -118,6 +119,8 @@ def record_exit(
     visit.exit_timestamp = payload.exit_timestamp or utcnow()
     visit.exit_officer_id = officer.id
     db.flush()
+    # Tour tracking stops at exit.
+    close_sessions_for_ticket(db, TICKET_VISIT, visit.id, visit.exit_timestamp, END_EXIT)
     record_audit(
         db,
         action="update",

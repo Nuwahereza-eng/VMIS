@@ -7,7 +7,7 @@
 import { openDB } from "idb";
 
 export const DB_NAME = "vmis";
-export const DB_VERSION = 1;
+export const DB_VERSION = 2;
 
 // Object stores mirror the server's syncable entities plus the outbound queue.
 export const STORES = {
@@ -17,6 +17,7 @@ export const STORES = {
   accommodations: "accommodations",
   outbox: "outbox", // pending sync operations
   meta: "meta", // key/value: session, last-sync, etc.
+  tourPoints: "tour_points", // a visitor phone's own recorded locations
 };
 
 let dbPromise = null;
@@ -47,6 +48,11 @@ export function getDb() {
         }
         if (!db.objectStoreNames.contains(STORES.meta)) {
           db.createObjectStore(STORES.meta, { keyPath: "key" });
+        }
+        // Version 2: tour tracking on a visitor's phone.
+        if (!db.objectStoreNames.contains(STORES.tourPoints)) {
+          const s = db.createObjectStore(STORES.tourPoints, { keyPath: "id" });
+          s.createIndex("session_id", "session_id");
         }
       },
     });

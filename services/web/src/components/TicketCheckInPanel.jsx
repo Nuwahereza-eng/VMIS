@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import { checkInTicket, checkOutTicket } from "../api/client.js";
+import TourLinkQr from "./TourLinkQr.jsx";
 import { CATEGORIES, formatMinor } from "../domain/categories.js";
 import { GATES } from "../domain/reference.js";
 import { formatDuration } from "../domain/tickets.js";
@@ -150,6 +151,11 @@ export default function TicketCheckInPanel({ booking: initial, token, online, st
         )}
         {life.stage === "cancelled" && (
           <div className="alert alert-danger py-2 mb-0">This booking was cancelled; the ticket is void.</div>
+        )}
+        {(life.stage === "paid" || life.stage === "touring") && (
+          <div className="mt-2">
+            <TourLinkQr bookingId={booking.id} token={token} online={online} />
+          </div>
         )}
         <button type="button" className="btn btn-ghost" onClick={onDone}>
           <i className="bi bi-qr-code-scan" /> Scan another

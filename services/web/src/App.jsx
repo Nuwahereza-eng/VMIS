@@ -1,4 +1,4 @@
-import { Navigate, Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes, useLocation } from "react-router-dom";
 
 import { useApp } from "./context/AppContext.jsx";
 import Layout from "./components/Layout.jsx";
@@ -25,9 +25,30 @@ import BookingsPage from "./pages/BookingsPage.jsx";
 import BookVisitPage from "./pages/BookVisitPage.jsx";
 import MyBookingsPage from "./pages/MyBookingsPage.jsx";
 import MyVisitPage from "./pages/MyVisitPage.jsx";
+import TourPage from "./pages/TourPage.jsx";
+import LiveTrackingPage from "./pages/LiveTrackingPage.jsx";
+import PointsOfInterestPage from "./pages/PointsOfInterestPage.jsx";
+
+// The visitor tour page opens from a gate QR or a per-visitor QR on the
+// visitor's own phone. It needs no account, works offline, and looks the same
+// whoever (if anyone) is signed in on that phone.
+function isTourPath(pathname) {
+  return pathname === "/tour" || pathname.startsWith("/tour/");
+}
 
 export default function App() {
   const { ready, session } = useApp();
+  const location = useLocation();
+
+  if (isTourPath(location.pathname)) {
+    return (
+      <Routes>
+        <Route path="/tour" element={<TourPage />} />
+        <Route path="/tour/gate/:gate" element={<TourPage />} />
+        <Route path="*" element={<Navigate to="/tour" replace />} />
+      </Routes>
+    );
+  }
 
   if (!ready) {
     return (
@@ -63,6 +84,8 @@ export default function App() {
         {allowed.has("/payments") && <Route path="/payments" element={<PaymentsPage />} />}
         {allowed.has("/visits") && <Route path="/visits" element={<VisitsPage />} />}
         {allowed.has("/alerts") && <Route path="/alerts" element={<AlertsPage />} />}
+        {allowed.has("/live-tracking") && <Route path="/live-tracking" element={<LiveTrackingPage />} />}
+        {allowed.has("/points-of-interest") && <Route path="/points-of-interest" element={<PointsOfInterestPage />} />}
         {allowed.has("/reports") && <Route path="/reports" element={<ReportsPage />} />}
         {allowed.has("/reconciliation") && <Route path="/reconciliation" element={<ReconciliationPage />} />}
         {allowed.has("/reminders") && <Route path="/reminders" element={<RemindersPage />} />}

@@ -11,12 +11,13 @@ every redaction is written to the audit log.
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-from sqlalchemy import select
+from sqlalchemy import delete, select, update
 from sqlalchemy.orm import Session
 
 from app.audit import record_audit
 from app.config import get_settings
 from app.models.base import ensure_utc, utcnow
+from app.models.tracking import LocationPoint, PoiAlert, VisitSession
 from app.models.visitor import Visitor
 
 REDACTED = "[redacted]"
@@ -75,3 +76,40 @@ def enforce_retention(
     if redacted:
         db.flush()
     return RetentionResult(cutoff=cutoff, redacted=redacted)
+
+
+# --- Location retention (tour tracking) ---
+
+
+@dataclass
+class LocationRetentionResult:
+    cutoff: datetime
+    points_deleted: int
+    alerts_deleted: int
+
+
+def enforce_location_retention(db: Session, now: datetime | None = None) -> LocationRetentionResult:
+    """Delete location points (and nearby-alert records) older than
+    ``location_retention_days``, and clear the last-known position kept on any
+    session whose newest point is that old. Counts only are audited; no
+    coordinates are ever logged."""
+    settings = get_settings()
+    reference = ensure_utc(now) if now is not None else utcnow()
+    cutoff = reference - timedelta(days=settings.location_retention_days)
+
+    points = db.execute(delete(LocationPoint).where(LocationPoint.recorded_at < cutoff)).rowcount or 0
+    alerts = db.execute(delete(PoiAlert).where(PoiAlert.shown_at < cutoff)).rowcount or 0
+    db.execute(
+        update(VisitSession)
+        .where(VisitSession.last_point_at < cutoff)
+        .values(last_point_at=None, last_latitude=None, last_longitude=None, last_accuracy=None)
+    )
+    if points or alerts:
+        record_audit(
+            db,
+            action="location_retention",
+            entity_type="location_point",
+            details={"points_deleted": points, "alerts_deleted": alerts},
+        )
+    db.flush()
+    return LocationRetentionResult(cutoff=cutoff, points_deleted=points, alerts_deleted=alerts)

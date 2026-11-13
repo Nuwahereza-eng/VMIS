@@ -9,6 +9,7 @@ from app.models.config import Facility, Gate
 from app.models.enums import Role, ScanKind, VisitorCategory, VisitorStatus
 from app.models.scan import ScanEvent
 from app.models.sync import SyncException, SyncOperation
+from app.models.tracking import LocationPoint, PoiAlert, PointOfInterest, VisitSession
 from app.models.user import User
 from app.models.visit import Visit
 from app.models.visitor import Visitor
@@ -33,4 +34,8 @@ __all__ = [
     "SyncOperation",
     "SyncException",
     "AuditEntry",
+    "VisitSession",
+    "LocationPoint",
+    "PointOfInterest",
+    "PoiAlert",
 ]

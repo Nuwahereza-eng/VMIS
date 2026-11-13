@@ -1,5 +1,8 @@
 """FastAPI application factory for the VMIS backend (Sprint 1)."""
 
+import asyncio
+import contextlib
+import logging
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
@@ -9,7 +12,7 @@ from app.bootstrap import bootstrap_admin, seed_demo_users, seed_demo_visitors
 from app.config import get_settings
 from app.db import SessionLocal, engine
 from app.models import Base
-from app.retention import enforce_retention
+from app.retention import enforce_location_retention, enforce_retention
 from app.routers import (
     activities,
     auth,
@@ -19,11 +22,13 @@ from app.routers import (
     management,
     scans,
     sync,
+    tour,
+    tracking,
     users,
     visitors,
     visits,
 )
-from app.seed import seed_facilities, seed_gates, seed_tariff
+from app.seed import seed_facilities, seed_gates, seed_points_of_interest, seed_tariff
 
 
 @asynccontextmanager
@@ -45,14 +50,41 @@ async def lifespan(app: FastAPI):
         # management edits are never overwritten on restart).
         seed_gates(db)
         seed_facilities(db)
+        # Placeholder points of interest only (inactive, at 0,0): real entries
+        # are supplied by management in the points of interest screen.
+        seed_points_of_interest(db)
         # On a public demo deploy, populate sample visitors/visits so the
         # dashboard isn't empty. No-op once the visitors table has any rows.
         seed_demo_visitors(db)
         # Enforce the PII retention period at start (build prompt section 8).
         if get_settings().retention_enforce_on_start:
             enforce_retention(db)
+            enforce_location_retention(db)
             db.commit()
-    yield
+    # Location retention also runs daily while the server is up.
+    retention_task = asyncio.create_task(_location_retention_loop())
+    try:
+        yield
+    finally:
+        retention_task.cancel()
+        with contextlib.suppress(asyncio.CancelledError):
+            await retention_task
+
+
+def _run_location_retention() -> None:
+    with SessionLocal() as db:
+        enforce_location_retention(db)
+        db.commit()
+
+
+async def _location_retention_loop() -> None:
+    interval = max(1, get_settings().location_retention_interval_hours) * 3600
+    while True:
+        await asyncio.sleep(interval)
+        try:
+            await asyncio.to_thread(_run_location_retention)
+        except Exception:  # never let a failed run stop the schedule
+            logging.getLogger("vmis.retention").exception("Location retention run failed")
 
 
 def create_app() -> FastAPI:
@@ -84,6 +116,8 @@ def create_app() -> FastAPI:
     app.include_router(config.router)
     app.include_router(sync.router)
     app.include_router(management.router)
+    app.include_router(tour.router)
+    app.include_router(tracking.router)
 
     @app.get("/health", tags=["ops"])
     def health() -> dict[str, str]:

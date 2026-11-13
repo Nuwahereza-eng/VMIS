@@ -28,6 +28,7 @@ from app.models.base import ensure_utc, utcnow
 from app.models.visit import Visit
 from app.models.visitor import Visitor
 from app.tickets import compute_validity
+from app.tracking import TICKET_VISIT, live_positions
 
 
 class AlertKind(str, enum.Enum):
@@ -36,13 +37,16 @@ class AlertKind(str, enum.Enum):
     OVERSTAY = "overstay"
     MISSING_EXIT = "missing_exit"
     DUPLICATE_ENTRY = "duplicate_entry"
+    # Tour tracking: an open session whose phone has sent no location for longer
+    # than ``tracking_stale_minutes`` (phone off, offline, or page closed).
+    TRACKING_STALE = "tracking_stale"
 
 
 @dataclass(frozen=True)
 class Alert:
     kind: AlertKind
-    visit_id: str
-    visitor_id: str
+    visit_id: str | None
+    visitor_id: str | None
     entry_gate: str
     entry_timestamp: datetime
     detail: str
@@ -53,6 +57,7 @@ class Alert:
     ticket_number: str | None = None
     nights_purchased: int | None = None
     expiry_timestamp: datetime | None = None
+    session_id: str | None = None
 
 
 def compute_alerts(db: Session, now: datetime | None = None) -> list[Alert]:
@@ -179,5 +184,33 @@ def compute_alerts(db: Session, now: datetime | None = None) -> list[Alert]:
                     **context(visit, visitor_key),
                 )
             )
+
+    # Tour tracking: consenting sessions whose location has gone quiet.
+    for position in live_positions(db, now=reference):
+        if not position.stale:
+            continue
+        session, ticket = position.session, position.ticket
+        quiet_since = ensure_utc(session.last_point_at) or ensure_utc(session.started_at)
+        minutes = int((reference - quiet_since).total_seconds() // 60)
+        alerts.append(
+            Alert(
+                kind=AlertKind.TRACKING_STALE,
+                visit_id=str(session.ticket_id) if session.ticket_kind == TICKET_VISIT else None,
+                visitor_id=str(session.visitor_id) if session.visitor_id else None,
+                entry_gate=session.gate or (ticket.gate if ticket else "") or "",
+                entry_timestamp=ensure_utc(session.started_at),
+                detail=(
+                    f"No location update for {minutes} min"
+                    if session.last_point_at
+                    else f"No location received in {minutes} min since the tour started"
+                ),
+                visitor_name=ticket.holder_name if ticket else None,
+                visitor_category=ticket.category if ticket else None,
+                ticket_number=ticket.ticket_code if ticket else None,
+                nights_purchased=ticket.nights if ticket else None,
+                expiry_timestamp=ticket.expires_at if ticket else None,
+                session_id=str(session.id),
+            )
+        )
 
     return alerts
