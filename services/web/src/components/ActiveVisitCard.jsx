@@ -2,6 +2,7 @@ import { CATEGORIES } from "../domain/categories.js";
 import { formatClock, formatDuration } from "../domain/tickets.js";
 import { JOURNEY, LIFECYCLE_META, journeyIndex } from "../domain/visitLifecycle.js";
 import useTicketQr from "./useTicketQr.js";
+import TourLinkQr from "./TourLinkQr.jsx";
 
 const CATEGORY_LABEL = Object.fromEntries(CATEGORIES.map((c) => [c.code, c.label]));
 
@@ -119,7 +120,7 @@ function Status({ stage, booking, expiresAt, remainingSeconds }) {
 
 // The live visit card: lifecycle badge, countdown, gate and arrival status, and
 // the QR the tourist shows at checkpoints and on exit.
-export default function ActiveVisitCard({ booking, stage, expiresAt, remainingSeconds }) {
+export default function ActiveVisitCard({ booking, stage, expiresAt, remainingSeconds, token, online }) {
   const meta = LIFECYCLE_META[stage] || LIFECYCLE_META.booked;
   const showQr = booking.ticket_code && (stage === "paid" || stage === "touring" || stage === "expired");
   const qrUrl = useTicketQr(showQr ? booking.ticket_code : null);
@@ -189,6 +190,14 @@ export default function ActiveVisitCard({ booking, stage, expiresAt, remainingSe
           <div className="booking-ticket__code">{booking.ticket_code}</div>
           <div className="booking-ticket__hint muted">
             {stage === "paid" ? "Show this QR at the gate" : "Show at checkpoints and when you exit"}
+          </div>
+        </div>
+      )}
+      {(stage === "paid" || stage === "touring") && token && (
+        <div className="visit-card__tour">
+          <TourLinkQr bookingId={booking.id} token={token} online={online} self />
+          <div className="muted small mt-2">
+            Get alerts about facilities and activities near you while you tour. You choose whether to share your location.
           </div>
         </div>
       )}

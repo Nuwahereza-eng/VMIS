@@ -38,6 +38,7 @@ from app.security import create_tour_token
 router = APIRouter(prefix="/tracking", tags=["tracking"])
 
 _gate_roles = require_roles(Role.GATE_OFFICER, Role.MANAGEMENT)
+_link_roles = require_roles(Role.GATE_OFFICER, Role.MANAGEMENT, Role.TOURIST)
 _manage_roles = require_roles(Role.MANAGEMENT)
 _view_locations = require_permission(Permission.VIEW_VISITOR_LOCATIONS)
 
@@ -46,15 +47,20 @@ _view_locations = require_permission(Permission.VIEW_VISITOR_LOCATIONS)
 def mint_tour_token(
     payload: TourTokenRequest,
     db: Session = Depends(get_db),
-    officer: User = Depends(_gate_roles),
+    officer: User = Depends(_link_roles),
 ) -> TourTokenOut:
     """A signed link for one visitor's ticket, shown as a QR after registration
-    or entry so the visitor's phone links without typing anything."""
+    or entry so the visitor's phone links without typing anything. A tourist
+    with an account may create one for their own paid booking only."""
     try:
+        if officer.role == Role.TOURIST and payload.booking_id is None:
+            raise tracking.LinkError(403, "Tourists can only create a tour link for their own booking")
         if payload.booking_id is not None:
             booking = db.get(Booking, payload.booking_id)
             if booking is None or not booking.ticket_code:
                 raise tracking.LinkError(404, "Paid booking not found")
+            if officer.role == Role.TOURIST and booking.created_by_id != officer.id:
+                raise tracking.LinkError(403, "You can only create a tour link for your own booking")
             ticket = tracking.resolve_ticket(db, booking.ticket_code)
         elif payload.visitor_id is not None:
             visitor = db.get(Visitor, payload.visitor_id)

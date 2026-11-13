@@ -133,7 +133,7 @@ function InParkContext({ booking, stage }) {
 // (touring, expired-but-inside, or next up for the gate), with its countdown,
 // QR, and in-park context. Works from the device cache when offline.
 export default function MyVisitPage() {
-  const { online } = useApp();
+  const { session, online } = useApp();
   const { bookings, savedAt, loading, error, reload } = useMyBookings({ pollMs: POLL_MS });
   const now = useNow(1000);
 
@@ -196,6 +196,8 @@ export default function MyVisitPage() {
         <div className="row g-3">
           <div className="col-lg-6 col-xl-5">
             <ActiveVisitCard
+              token={session.token}
+              online={online}
               booking={current.booking}
               stage={current.stage}
               expiresAt={current.expiresAt}

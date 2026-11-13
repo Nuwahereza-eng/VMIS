@@ -335,3 +335,24 @@ def test_retention_deletes_old_points(client, linked, db_session):
     assert result.points_deleted == 1
     assert db_session.get(LocationPoint, old) is None
     assert db_session.get(LocationPoint, recent) is not None
+
+
+def test_tourist_can_create_a_tour_link_for_their_own_booking_only(client, gate_officer_token):
+    def tourist(email):
+        return client.post("/auth/register", json={"email": email, "password": "touristpass123", "full_name": "T"}).json()["access_token"]
+
+    owner, other = tourist("owner@example.com"), tourist("other@example.com")
+    b = client.post(
+        "/bookings",
+        headers=auth_header(owner),
+        json={"full_name": "Synthetic Owner", "intended_date": utcnow().date().isoformat(), "category": "FNR"},
+    ).json()
+    client.post(f"/bookings/{b['id']}/pay", headers=auth_header(owner), json={})
+
+    minted = client.post("/tracking/tour-token", headers=auth_header(owner), json={"booking_id": b["id"]})
+    assert minted.status_code == 200, minted.text
+    assert _link(client, token=minted.json()["token"]).json()["ticket"]["holder_name"] == "Synthetic Owner"
+
+    assert client.post("/tracking/tour-token", headers=auth_header(other), json={"booking_id": b["id"]}).status_code == 403
+    v, _ = _visitor_with_entry(client, gate_officer_token)
+    assert client.post("/tracking/tour-token", headers=auth_header(owner), json={"visitor_id": v["id"]}).status_code == 403

@@ -13,6 +13,10 @@ limits found. The plan was approved before coding, with eight decisions
   and the booking check-in panel have **Show tour link QR**. It opens
   `/tour#t=<token>`, already linked to that ticket. The token sits in the URL
   fragment, so it is never sent to a server or written to access logs.
+- **Tourists with an account:** **My visit** has a **Start tour tracking**
+  option for their own paid booking. It offers **Start on this phone** and a QR
+  to open the page on another phone. The server only lets a tourist create a
+  link for a booking they made themselves.
 - **Linking from the gate QR:** the visitor scans or types their ticket. Accepted:
   - the visitor QR (`VMIS:1:<id>`, or the older bare-id form)
   - a booking code (`MF-…`)

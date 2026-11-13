@@ -3320,3 +3320,4 @@ table.table { --bs-table-border-color: var(--vmis-line); }
   color: var(--vmis-body);
 }
 .tour-link-qr { text-align: center; }
+.visit-card__tour { margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--vmis-line); text-align: center; }
